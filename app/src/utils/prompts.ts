@@ -68,16 +68,17 @@ ${FMT}`,
 ${prev ? `\nContradictions:\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Cross-field Transfer
-For each contradiction above, find a field that solved a structurally identical tension.
+For each contradiction above, find a different industry or business sector that faced a structurally identical tension and solved it.
 
 HARD RULES:
-- BANNED domains (too obvious, never use): biology, military logistics, game design, urban planning, cooking, architecture, sports, music. If you think of these — reject and go deeper.
-- Each card MUST use a different domain. No repeats.
-- The domain is chosen because of structural fit to THIS specific contradiction — not because it sounds creative.
-- Obscure and unexpected is better. Think: tax law, funeral industry, Antarctic expeditions, medieval guilds, orthodontics, cargo shipping, prison systems, competitive eating, satellite insurance.
+- Priority: look in OTHER BUSINESS SECTORS first — retail, logistics, insurance, banking, pharma, real estate, franchising, B2B SaaS, media, staffing, marketplaces, manufacturing, telecom, etc.
+- BANNED (too abstract, not useful for business): biology, military logistics, game design, urban planning, cooking, architecture, medieval history, nature metaphors. Reject these immediately.
+- Each card MUST use a different industry. No repeats.
+- The industry is chosen for STRUCTURAL FIT to this specific contradiction — not for sounding interesting.
+- The more specific the business example the better: not "retail" but "fast fashion inventory management", not "banking" but "microloan underwriting in emerging markets".
 
-For each card: name the domain, state the structural tension it faced, explain the mechanism it used to resolve it, map that mechanism directly to the original contradiction.
-Title format: "<Domain>: <principle>"
+For each card: name the industry + specific context, state the structural tension it faced, explain the exact mechanism it used to resolve it, map that mechanism to the original contradiction.
+Title format: "<Industry>: <principle>"
 
 ${FMT}`,
 

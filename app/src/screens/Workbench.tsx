@@ -27,6 +27,17 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   const projectRef = useRef(project);
   useEffect(() => { projectRef.current = project; }, [project]);
 
+  // Auto-start on new empty projects
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStarted.current) return;
+    if (project.cards.length === 0 && getApiKey()) {
+      autoStarted.current = true;
+      handleAutoGenerateAll();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const selectedCard = project.selectedCardId
     ? getCard(project, project.selectedCardId)
     : null;
@@ -196,7 +207,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
                 : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
             ].join(' ')}
           >
-            {isAutoGenerating ? `⏳ ${autoGenProgress}` : '🚀 Запустить всё'}
+            {isAutoGenerating ? `⏳ ${autoGenProgress}` : project.cards.length === 0 ? '🚀 Запустить всё' : '🔄 Перегенерировать'}
           </button>
           {autoGenError && (
             <span className="text-xs text-red-500 max-w-[160px] truncate" title={autoGenError}>

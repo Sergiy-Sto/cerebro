@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ЖУРНАЛ — Creative Core Workbench</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; color: #1a1a1a; background: #f7f7f5; }
+  .page { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 32px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 0 0 12px; }
+  h3 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; color: #374151; }
+  p { margin-bottom: 8px; }
+  ul { padding-left: 18px; margin-bottom: 8px; }
+  li { margin-bottom: 3px; }
+  code { font-family: 'Menlo', 'Monaco', monospace; font-size: 12px; background: #eee; padding: 1px 4px; border-radius: 3px; }
+
+  .section { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 12px; border: 1px solid #e5e5e5; }
+  .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+  .section-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+
+  /* Статус секция */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .status-card { border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px 14px; }
+  .status-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 4px; }
+  .status-value { font-size: 14px; font-weight: 600; }
+
+  /* Задачи */
+  .task { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+  .task:last-child { border-bottom: none; padding-bottom: 0; }
+  .task-badge { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; height: fit-content; margin-top: 2px; }
+  .badge-p0 { background: #fee2e2; color: #991b1b; }
+  .badge-p1 { background: #fef3c7; color: #92400e; }
+  .badge-p2 { background: #f0fdf4; color: #166534; }
+  .badge-done { background: #f0f0f0; color: #6b7280; }
+  .badge-blocked { background: #ede9fe; color: #5b21b6; }
+  .task-body { flex: 1; }
+  .task-title { font-weight: 500; font-size: 14px; }
+  .task-desc { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+  /* Фичи */
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .feature { border-radius: 6px; padding: 10px 12px; font-size: 13px; border: 1px solid transparent; }
+  .feature-title { font-weight: 600; margin-bottom: 2px; }
+  .feature-note { font-size: 12px; opacity: 0.75; }
+  .feat-done { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+  .feat-wip { background: #fefce8; border-color: #fde68a; color: #854d0e; }
+  .feat-todo { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+  .feat-blocked { background: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
+
+  /* История решений */
+  .decision { border-left: 3px solid #e5e5e5; padding: 10px 14px; margin-bottom: 10px; background: #fafafa; border-radius: 0 6px 6px 0; }
+  .decision.important { border-color: #3b82f6; }
+  .decision-date { font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
+  .decision-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .decision-why { font-size: 13px; color: #374151; }
+  .decision-why strong { color: #1a1a1a; }
+
+  /* Сессии */
+  .session { border: 1px solid #e5e5e5; border-radius: 6px; padding: 14px 16px; margin-bottom: 8px; }
+  .session-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .session-title { font-weight: 600; font-size: 14px; }
+  .session-date { font-size: 12px; color: #9ca3af; }
+  .session-summary { font-size: 13px; color: #4b5563; }
+
+  .alert { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; }
+  .alert strong { color: #92400e; }
+
+  .empty { color: #9ca3af; font-size: 13px; font-style: italic; padding: 8px 0; }
+
+  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-right: 3px; margin-top: 4px; }
+  .tag-blue { background: #dbeafe; color: #1e40af; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>ЖУРНАЛ</h1>
+  <div class="subtitle">Creative Core Workbench · Живое состояние проекта · Обновляется каждую сессию</div>
+
+  <div class="alert">
+    <strong>Для Claude:</strong> Это единственное место где хранится живое состояние. Читать в начале каждой сессии. После сессии — обновить «Текущее состояние», «Открытые задачи» и добавить запись в «Историю решений».
+  </div>
+
+  <!-- ТЕКУЩЕЕ СОСТОЯНИЕ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#dbeafe;">📍</div>
+      <h2>Текущее состояние</h2>
+    </div>
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="status-label">Фаза</div>
+        <div class="status-value">Инициализация</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Следующий шаг</div>
+        <div class="status-value">Создать Vite-скелет проекта</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Готово к разработке?</div>
+        <div class="status-value">✅ Да — ТЗ прочитано</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Последняя сессия</div>
+        <div class="status-value" id="today"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ОТКРЫТЫЕ ЗАДАЧИ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fef3c7;">📋</div>
+      <h2>Открытые задачи</h2>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p0">P0</div>
+      <div class="task-body">
+        <div class="task-title">Создать Vite + React + TS + Tailwind скелет</div>
+        <div class="task-desc">Пустое приложение, убедиться что запускается. Шаг 1 из 12 по ТЗ.</div>
+      </div>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p0">P0</div>
+      <div class="task-body">
+        <div class="task-title">Типы + стейдж-конфиг + store с localStorage sync</div>
+        <div class="task-desc">types.ts, stages.ts, store.ts — без UI. Шаг 2.</div>
+      </div>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p1">P1</div>
+      <div class="task-body">
+        <div class="task-title">Project Picker + Project Form</div>
+        <div class="task-desc">Можно создать / удалить проект. Шаг 3.</div>
+      </div>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p1">P1</div>
+      <div class="task-body">
+        <div class="task-title">Workbench с тремя колонками</div>
+        <div class="task-desc">Статика, рендер этапов, пустой список карточек. Шаг 4.</div>
+      </div>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p1">P1</div>
+      <div class="task-body">
+        <div class="task-title">Add card form → Card detail → Status actions</div>
+        <div class="task-desc">Шаги 5, 6, 7. Карточки появляются, выбираются, меняют статус.</div>
+      </div>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p2">P2</div>
+      <div class="task-body">
+        <div class="task-title">Progression logic + Paste JSON + Create child</div>
+        <div class="task-desc">Шаги 8, 9, 10. Next stage, импорт массива, child-карточки.</div>
+      </div>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p2">P2</div>
+      <div class="task-body">
+        <div class="task-title">Export / Import JSON + Polish</div>
+        <div class="task-desc">Шаги 11, 12. Финальная полировка, acceptance criteria.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- СТАТУС ФИЧ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#f0fdf4;">🗂</div>
+      <h2>Статус фич</h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature feat-todo">
+        <div class="feature-title">Project Picker</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Project Form</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Workbench layout</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Stages Column</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Cards Column</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Card Detail</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Add / Edit Card Form</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Status Actions (★ / ✗)</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Next Stage logic</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Paste JSON Modal</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Create Child</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Export / Import JSON</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">localStorage sync</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+      <div class="feature feat-todo">
+        <div class="feature-title">Stage status icons ✓●·○</div>
+        <div class="feature-note">Не начато</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ИСТОРИЯ РЕШЕНИЙ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#f5f3ff;">🧠</div>
+      <h2>История решений</h2>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-23 · Инициализация</div>
+      <div class="decision-title">Цветовая дифференциация блоков в интерфейсе</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Визуально разделять три колонки Workbench (Stages / Cards / Card Detail) цветом фона или акцентной полосой — не просто серые блоки.<br>
+        <strong>Почему:</strong> Пользователь явно попросил дифференцировать блоки цветом для улучшения навигации. При минималистичном UI без красивостей — цвет остаётся главным инструментом зонирования.
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="decision-date">2026-05-23 · Инициализация</div>
+      <div class="decision-title">Создана структура управления памятью (CLAUDE.md / ЖУРНАЛ / ПРОЕКТ)</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Три файла с разными ролями: CLAUDE.md — правила и стек (не меняется), ЖУРНАЛ.html — живое состояние (обновляется каждую сессию), ПРОЕКТ.html — справочник продукта.<br>
+        <strong>Почему:</strong> Решает проблему потери контекста при сжатии памяти Claude Code. Claude.md автоматически подгружается при каждом старте.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ИСТОРИЯ СЕССИЙ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fff7ed;">📅</div>
+      <h2>История сессий</h2>
+    </div>
+
+    <div class="session">
+      <div class="session-header">
+        <div class="session-title">Сессия 1 — Инициализация</div>
+        <div class="session-date" id="session-date"></div>
+      </div>
+      <div class="session-summary">
+        Создан CLAUDE.md с системным промптом, ЖУРНАЛ.html и ПРОЕКТ.html. Прочитано ТЗ (Проект.md). Зафиксировано решение о цветовой дифференциации блоков. Проект готов к разработке.
+      </div>
+      <div>
+        <span class="tag tag-blue">init</span>
+        <span class="tag tag-blue">документация</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ОТКРЫТЫЕ ВОПРОСЫ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fef2f2;">❓</div>
+      <h2>Открытые вопросы</h2>
+    </div>
+
+    <div class="task">
+      <div class="task-badge badge-p1">?</div>
+      <div class="task-body">
+        <div class="task-title">Удаление карточки с child-ами: каскад или запрет?</div>
+        <div class="task-desc">ТЗ говорит: спроси пользователя. Варианты — запретить с пояснением, или удалять каскадно с подтверждением.</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+<script>
+  const now = new Date();
+  const fmt = (d) => d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('today').textContent = fmt(now);
+  document.getElementById('session-date').textContent = fmt(now);
+</script>
+</body>
+</html>

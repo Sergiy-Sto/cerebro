@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  /* warm cream palette — replaces harsh white/grays */
+  --color-white: #faf7f2;
+  --color-gray-50: #f2ece2;
+  --color-gray-100: #e9e2d6;
+  --color-gray-200: #ddd5c6;
+  --color-gray-300: #c8bfb0;
+  --color-gray-400: #a89f92;
+
+  /* bolder semibold to match the reference design style */
+  --font-weight-semibold: 700;
+  --font-weight-medium: 600;
+}
+
+@layer base {
+  body {
+    background-color: #f2ece2;
+  }
+}

@@ -20,7 +20,9 @@
       "Bash(git -C \"C:\\\\Users\\\\user\\\\Desktop\\\\++ Клод - Ноут\\\\Бизнес-Церебро\" status)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
     ]
   }
 }

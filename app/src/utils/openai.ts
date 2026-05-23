@@ -20,6 +20,8 @@ export interface GeneratedCard {
   title: string;
   description: string;
   tags: string[];
+  metrics?: { novelty: number; strength: number; feasibility: number; testability: number };
+  analysis?: string;
 }
 
 function parseCard(line: string): GeneratedCard | null {
@@ -29,10 +31,24 @@ function parseCard(line: string): GeneratedCard | null {
     const obj = JSON.parse(trimmed) as Record<string, unknown>;
     const title = String(obj.title ?? '').trim();
     if (!title) return null;
+
+    let metrics: GeneratedCard['metrics'];
+    if (obj.metrics && typeof obj.metrics === 'object') {
+      const m = obj.metrics as Record<string, unknown>;
+      metrics = {
+        novelty: Math.min(10, Math.max(0, Number(m.novelty) || 0)),
+        strength: Math.min(10, Math.max(0, Number(m.strength) || 0)),
+        feasibility: Math.min(10, Math.max(0, Number(m.feasibility) || 0)),
+        testability: Math.min(10, Math.max(0, Number(m.testability) || 0)),
+      };
+    }
+
     return {
       title,
       description: String(obj.description ?? '').trim(),
       tags: Array.isArray(obj.tags) ? (obj.tags as unknown[]).map(String) : [],
+      metrics,
+      analysis: obj.analysis ? String(obj.analysis).trim() : undefined,
     };
   } catch {
     return null;

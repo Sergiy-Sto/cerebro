@@ -113,6 +113,40 @@ export default function CardDetail({ card, project, dispatch }: CardDetailProps)
           </div>
         )}
 
+        {/* Metrics */}
+        {card.metrics && (
+          <div className="mb-4 p-3 bg-gray-50 border border-gray-200">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Оценка</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              {([
+                { key: 'novelty',     label: 'Новизна' },
+                { key: 'strength',    label: 'Сила идеи' },
+                { key: 'feasibility', label: 'Реализация' },
+                { key: 'testability', label: 'Проверяемость' },
+              ] as const).map(({ key, label }) => {
+                const val = card.metrics![key] ?? 0;
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-500">{label}</span>
+                      <span className={`font-semibold ${val >= 8 ? 'text-emerald-600' : val >= 6 ? 'text-amber-600' : 'text-red-500'}`}>{val}/10</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${val >= 8 ? 'bg-emerald-400' : val >= 6 ? 'bg-amber-400' : 'bg-red-400'}`}
+                        style={{ width: `${val * 10}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {card.analysis && (
+              <p className="text-xs text-gray-500 mt-3 leading-relaxed">{card.analysis}</p>
+            )}
+          </div>
+        )}
+
         {/* Status */}
         <p className="text-xs text-gray-500 mb-4">
           Статус:{' '}

@@ -10,6 +10,13 @@ export type CardType =
 
 export type CardStatus = 'neutral' | 'interesting' | 'discarded';
 
+export interface CardMetrics {
+  novelty: number;
+  strength: number;
+  feasibility: number;
+  testability: number;
+}
+
 export interface Card {
   id: string;
   number: number;
@@ -21,6 +28,8 @@ export interface Card {
   status: CardStatus;
   parentId: string | null;
   createdAt: string;
+  metrics?: CardMetrics;
+  analysis?: string;
 }
 
 export interface Project {

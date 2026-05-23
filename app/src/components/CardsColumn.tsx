@@ -95,6 +95,8 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                 status: 'neutral',
                 parentId: null,
                 createdAt: new Date().toISOString(),
+                metrics: gen.metrics,
+                analysis: gen.analysis,
               },
             },
           });

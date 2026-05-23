@@ -124,6 +124,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             type: stage.expectedCardType,
             title: gen.title, description: gen.description, tags: gen.tags,
             status: 'neutral', parentId: null, createdAt: new Date().toISOString(),
+            metrics: gen.metrics, analysis: gen.analysis,
           };
           generatedCards.push(card);
           dispatch({ type: 'ADD_CARD', payload: { projectId: baseProject.id, card } });

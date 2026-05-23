@@ -31,13 +31,14 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
   useEffect(() => {
     if (autoGenerating) return;
+    if (project.cards.length === 0) return; // свежий проект — auto-all в Workbench
     const key = `${project.id}:${project.activeStageId}`;
     if (cards.length === 0 && getApiKey() && !isGenerating && autoGenKey.current !== key) {
       autoGenKey.current = key;
       handleGenerate();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, project.activeStageId, cards.length, autoGenerating]);
+  }, [project.id, project.activeStageId, cards.length, autoGenerating, project.cards.length]);
 
   function handleNextStage() {
     if (nextStage) {

@@ -173,9 +173,15 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         </div>
 
         <div className="flex gap-2 shrink-0 items-center">
-          <span className="text-xs text-gray-300 select-none" title="Версия сборки">
-            {new Date(__BUILD_TIME__).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
-          </span>
+          <a
+            href={`https://github.com/Sergiy-Sto/cerebro/commit/${__GIT_HASH__}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-gray-300 hover:text-gray-500 font-mono"
+            title={new Date(__BUILD_TIME__).toLocaleString('ru-RU')}
+          >
+            {__GIT_HASH__}
+          </a>
           <button
             onClick={handleAutoGenerateAll}
             disabled={isAutoGenerating || !hasApiKey}

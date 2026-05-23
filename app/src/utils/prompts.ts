@@ -68,7 +68,15 @@ ${FMT}`,
 ${prev ? `\nContradictions:\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Cross-field Transfer
-For each contradiction above, find a completely different field or domain that faced a structurally identical tension and solved it. The domain must be chosen based on structural fit to THIS specific contradiction — not picked from a generic list. Surprise yourself: the less obvious the domain, the more valuable the insight. Forbidden: do not default to the same domains repeatedly across cards. Describe exactly how that domain resolved the tension and map the mechanism back to the original problem. Generate 5 cards.
+For each contradiction above, find a field that solved a structurally identical tension.
+
+HARD RULES:
+- BANNED domains (too obvious, never use): biology, military logistics, game design, urban planning, cooking, architecture, sports, music. If you think of these — reject and go deeper.
+- Each card MUST use a different domain. No repeats.
+- The domain is chosen because of structural fit to THIS specific contradiction — not because it sounds creative.
+- Obscure and unexpected is better. Think: tax law, funeral industry, Antarctic expeditions, medieval guilds, orthodontics, cargo shipping, prison systems, competitive eating, satellite insurance.
+
+For each card: name the domain, state the structural tension it faced, explain the mechanism it used to resolve it, map that mechanism directly to the original contradiction.
 Title format: "<Domain>: <principle>"
 
 ${FMT}`,

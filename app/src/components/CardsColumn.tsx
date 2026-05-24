@@ -33,6 +33,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   useEffect(() => {
     if (autoGenerating) return;
     if (project.cards.length === 0) return; // свежий проект — auto-all в Workbench
+    if (stageConfig.userInput) return; // ручной ввод — не генерируем
     const key = `${project.id}:${project.activeStageId}`;
     if (cards.length === 0 && getApiKey() && !isGenerating && autoGenKey.current !== key) {
       autoGenKey.current = key;
@@ -98,6 +99,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                 metrics: gen.metrics,
                 analysis: gen.analysis,
                 model,
+                derivedFromIds: gen.derivedFromIds,
               },
             },
           });
@@ -165,36 +167,48 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
       {/* Sticky bottom */}
       <div className="border-t border-gray-200 px-3 py-3 space-y-2">
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleGenerate(false)}
-            disabled={isGenerating || cards.length > 0}
-            className={[
-              'flex-1 px-2 py-2 text-xs font-medium',
-              isGenerating || cards.length > 0
-                ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
-                : 'bg-violet-600 text-white hover:bg-violet-700',
-            ].join(' ')}
-          >
-            {isGenerating && cards.length === 0 ? '⏳ Генерирую…' : '⚡ Генерировать'}
-          </button>
-          <button
-            onClick={() => handleGenerate(true)}
-            disabled={isGenerating || cards.length === 0}
-            className={[
-              'flex-1 px-2 py-2 text-xs font-medium border',
-              isGenerating && cards.length > 0
-                ? 'border-violet-200 text-violet-400 cursor-not-allowed'
-                : cards.length === 0
-                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                : 'border-violet-400 text-violet-700 hover:bg-violet-50',
-            ].join(' ')}
-          >
-            {isGenerating && cards.length > 0 ? '⏳ Думаю…' : '💡 Думай ещё'}
-          </button>
-        </div>
+        {stageConfig.userInput ? (
+          <div className="bg-zinc-50 border border-zinc-200 p-2.5 text-xs text-zinc-700">
+            <p className="font-medium mb-1">📝 Ручной ввод</p>
+            <p className="text-zinc-500">
+              Этот этап — для твоих собственных заметок: ссылки, цитаты, скриншоты, найденное в интернете.
+              AI здесь не генерирует — добавляй карточки вручную.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleGenerate(false)}
+                disabled={isGenerating || cards.length > 0}
+                className={[
+                  'flex-1 px-2 py-2 text-xs font-medium',
+                  isGenerating || cards.length > 0
+                    ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
+                    : 'bg-violet-600 text-white hover:bg-violet-700',
+                ].join(' ')}
+              >
+                {isGenerating && cards.length === 0 ? '⏳ Генерирую…' : '⚡ Генерировать'}
+              </button>
+              <button
+                onClick={() => handleGenerate(true)}
+                disabled={isGenerating || cards.length === 0}
+                className={[
+                  'flex-1 px-2 py-2 text-xs font-medium border',
+                  isGenerating && cards.length > 0
+                    ? 'border-violet-200 text-violet-400 cursor-not-allowed'
+                    : cards.length === 0
+                    ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                    : 'border-violet-400 text-violet-700 hover:bg-violet-50',
+                ].join(' ')}
+              >
+                {isGenerating && cards.length > 0 ? '⏳ Думаю…' : '💡 Думай ещё'}
+              </button>
+            </div>
 
-        {genError && <p className="text-xs text-red-500 break-words">{genError}</p>}
+            {genError && <p className="text-xs text-red-500 break-words">{genError}</p>}
+          </>
+        )}
 
         <button
           onClick={() => setShowAddForm(true)}

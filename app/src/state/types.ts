@@ -1,14 +1,23 @@
 export type StageId =
-  | 'definition' | 'invert' | 'friction' | 'contradiction'
+  | 'observation' | 'search_plan' | 'search_notes' | 'reality_summary'
+  | 'entity_mapping' | 'feature_challenge'
+  | 'friction' | 'contradiction'
   | 'cross_field' | 'opportunity' | 'hypothesis' | 'critic'
-  | 'shortlist' | 'validation';
+  | 'shortlist' | 'validation'
+  // legacy (old projects):
+  | 'definition' | 'invert';
 
 export type CardType =
-  | 'definition_element' | 'assumption' | 'inverted_assumption'
+  | 'observation_item' | 'search_task' | 'evidence_item' | 'reality_map_summary'
+  | 'entity_dimension' | 'transformation_handle'
   | 'friction_point' | 'contradiction' | 'cross_field_analogy'
-  | 'opportunity_branch' | 'hypothesis' | 'critique' | 'validation_test';
+  | 'opportunity_branch' | 'hypothesis' | 'critique' | 'validation_test'
+  // legacy:
+  | 'definition_element' | 'assumption' | 'inverted_assumption';
 
 export type CardStatus = 'neutral' | 'interesting' | 'discarded';
+
+export type CardConfidence = 'assumed' | 'user_provided' | 'observed' | 'evidence_supported';
 
 export interface CardMetrics {
   novelty: number;
@@ -31,6 +40,9 @@ export interface Card {
   metrics?: CardMetrics;
   analysis?: string;
   model?: string;
+  confidence?: CardConfidence;
+  notes?: string;
+  derivedFromIds?: string[];
 }
 
 export interface Project {

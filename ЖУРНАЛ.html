@@ -93,15 +93,15 @@
     <div class="status-grid">
       <div class="status-card">
         <div class="status-label">Фаза</div>
-        <div class="status-value">Инициализация</div>
+        <div class="status-value">Reality Mapping arch v1 (deploy)</div>
       </div>
       <div class="status-card">
         <div class="status-label">Следующий шаг</div>
-        <div class="status-value">Создать Vite-скелет проекта</div>
+        <div class="status-value">Прогнать на 2-3 темах, докрутить промпты следующих этапов</div>
       </div>
       <div class="status-card">
-        <div class="status-label">Готово к разработке?</div>
-        <div class="status-value">✅ Да — ТЗ прочитано</div>
+        <div class="status-label">Прод</div>
+        <div class="status-value">cerebro.lexion.pro · auto-deploy через GitHub Actions</div>
       </div>
       <div class="status-card">
         <div class="status-label">Последняя сессия</div>
@@ -248,6 +248,33 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-24 · Reality Mapping arch v1</div>
+      <div class="decision-title">Reality Mapping модуль вместо плоского Definition Deconstruction</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Старый этап "Деконструкция определения" разбит на 4 новых этапа: Observation Scan → Search Plan → Search Notes (ручной ввод) → Reality Map Summary. Далее идёт Entity Mapping (16-измерительный онтологический разбор) и Feature Challenge (бывший Invert, переосмыслен через серию трансформаций).<br>
+        <strong>Почему:</strong> Старый Definition выдавал реферат школьника — поверхностный, без связей. Без глубокого фундамента вся цепочка следующих этапов плыла. Reality Mapping заставляет модель сначала собрать карту реальности (что РЕАЛЬНО существует), а не сразу генерировать абстракции. Entity Mapping добавляет ключевое измерение OBLIGATORY vs ACCIDENTAL — точку входа для Feature Challenge.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-24 · Reality Mapping arch v1</div>
+      <div class="decision-title">Linked cards — данные сохраняются, UI визуализации откладываем</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Добавлено поле <code>derivedFromIds: string[]</code> в Card. Модель в каждом этапе указывает ID карточек из контекста, на основе которых построена новая карточка. Данные сохраняются и используются в промптах следующих этапов как структурированный контекст. В UI пока не показываем.<br>
+        <strong>Почему:</strong> Главное — модель работает связно: каждая инверсия атакует конкретный признак, каждая гипотеза вырастает из конкретной opportunity. Это убирает "генерацию в вакууме". Полноценный UI графа (визуализация связей, навигация по графу, обратные связи) — это серьёзная работа на день-два, при этом методологически данные уже накапливаются и могут быть визуализированы позже.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-24</div>
+      <div class="decision-title">Контекст между этапами — ВСЕ карточки, ★ только для приоритизации</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> В каждый следующий этап передаются ВСЕ карточки предыдущих этапов как контекст. Раньше передавались только отмеченные ★ — но при auto-all никто не отмечает, и цепочка генерировалась практически в вакууме. Теперь ★ просто помечается в тексте промпта как "особо важная", модель учитывает приоритет, но не игнорирует остальные.<br>
+        <strong>Почему:</strong> Главный фейл предыдущей версии — auto-all генерировал каждый этап без контекста, потому что фильтр был <code>status === 'interesting'</code>. Это вырезало всё в свежем проекте.
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-23 · Инициализация</div>
       <div class="decision-title">Цветовая дифференциация блоков в интерфейсе</div>
       <div class="decision-why">
@@ -276,6 +303,36 @@
 
     <div class="session">
       <div class="session-header">
+        <div class="session-title">Сессия 3 — Reality Mapping arch v1</div>
+        <div class="session-date">2026-05-24</div>
+      </div>
+      <div class="session-summary">
+        Переработка архитектуры методологии. Старый Definition заменён на полный модуль Reality Mapping (4 sub-stages: Observation Scan, Search Plan, Search Notes, Reality Map Summary) + Entity Mapping (16 онтологических измерений) + Feature Challenge (бывший Invert переосмыслен). Добавлены поля карточек: <code>confidence</code>, <code>notes</code>, <code>derivedFromIds</code>. Контекст между этапами теперь = все карточки предыдущих, ★ — только приоритизация. Selector модели в хедере: gpt-5.5 (дефолт), gpt-5.4, gpt-5.4-mini, gpt-4.1, o4-mini, o3. Добавлено Правило 11 в CLAUDE.md: актуализация быстро меняющейся информации.
+      </div>
+      <div>
+        <span class="tag tag-blue">архитектура</span>
+        <span class="tag tag-blue">промпты</span>
+        <span class="tag tag-blue">reality-mapping</span>
+      </div>
+    </div>
+
+    <div class="session">
+      <div class="session-header">
+        <div class="session-title">Сессия 2 — MVP + Auto-all + Метрики</div>
+        <div class="session-date">2026-05-23 / 24</div>
+      </div>
+      <div class="session-summary">
+        Собран MVP по ТЗ (Vite + React + TS + Tailwind, localStorage, 10 этапов). Подключена интеграция с OpenAI API, streaming генерация карточек. Добавлен auto-all (последовательная генерация всех этапов). Метрики на карточках (Новизна / Сила / Реализация / Проверяемость) начиная с Hypothesis. GitHub Actions auto-deploy на Hostinger. Версия (git hash) в хедере. Auto-start генерации на новых проектах. Чинились баги двойной генерации и stale ref.
+      </div>
+      <div>
+        <span class="tag tag-blue">mvp</span>
+        <span class="tag tag-blue">deploy</span>
+        <span class="tag tag-blue">метрики</span>
+      </div>
+    </div>
+
+    <div class="session">
+      <div class="session-header">
         <div class="session-title">Сессия 1 — Инициализация</div>
         <div class="session-date" id="session-date"></div>
       </div>
@@ -285,6 +342,52 @@
       <div>
         <span class="tag tag-blue">init</span>
         <span class="tag tag-blue">документация</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ИДЕИ НА ПОТОМ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#f5f3ff;">💡</div>
+      <h2>Идеи на потом (отложенные фичи)</h2>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">отложено · 2026-05-24</div>
+      <div class="decision-title">🕸 Визуализация графа связей карточек (derivedFromIds)</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Данные о связях <code>derivedFromIds</code> уже сохраняются на каждой карточке. Нужен UI который их покажет: блок "Выведено из: ..." с кликабельными ссылками на карточки-источники, обратные связи "На основе этой построены: ...", навигация по графу, возможно мини-визуализация дерева связей.<br>
+        <strong>Почему отложено:</strong> Это серьёзный UI-движок (день-два кодинга): редактирование связей, удаление с каскадом, импорт/экспорт со связями, обработка битых ссылок. На MVP-фазе важнее проверить что методология работает в принципе. Данные накапливаются — можно визуализировать когда станет понятно как именно.<br>
+        <strong>Когда вернуться:</strong> Когда базовая цепочка этапов начнёт выдавать сильные гипотезы и захочется понимать "откуда взялась эта идея".
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="decision-date">отложено · 2026-05-24</div>
+      <div class="decision-title">🔍 Автоматический web search для Search Notes</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Search Notes сейчас — ручной ввод пользователем. Можно подключить автопоиск через WebSearch API (тот же OpenAI или отдельный сервис).<br>
+        <strong>Почему отложено:</strong> Хотим понять как методология работает с минимально-вмешивающейся версией. Если ручной ввод оказывается узким местом — подключим автопоиск.
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="decision-date">отложено · 2026-05-24</div>
+      <div class="decision-title">📊 UI для confidence / notes на карточках</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Поля <code>confidence</code> (assumed / user_provided / observed / evidence_supported) и <code>notes</code> уже в типе. Нужны бейджи и редактирование в UI.<br>
+        <strong>Почему отложено:</strong> Сначала смотрим как модель использует confidence в промптах. Если полезно — добавим UI.
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="decision-date">отложено · 2026-05-24</div>
+      <div class="decision-title">🎨 Группировка этапов в левой колонке</div>
+      <div class="decision-why">
+        <strong>Что:</strong> 14 этапов flat list — длинно. Можно сгруппировать визуально: Reality Mapping (4) / Deep analysis (2) / Friction & opportunity (4) / Synthesis (4).<br>
+        <strong>Почему отложено:</strong> Сам пользователь сказал — пока не критично. Сначала проверяем как работает контент.
       </div>
     </div>
 

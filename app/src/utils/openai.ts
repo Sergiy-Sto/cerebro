@@ -22,6 +22,7 @@ export interface GeneratedCard {
   tags: string[];
   metrics?: { novelty: number; strength: number; feasibility: number; testability: number };
   analysis?: string;
+  derivedFromIds?: string[];
 }
 
 function parseCard(line: string): GeneratedCard | null {
@@ -43,12 +44,17 @@ function parseCard(line: string): GeneratedCard | null {
       };
     }
 
+    const derivedFromIds = Array.isArray(obj.derived_from)
+      ? (obj.derived_from as unknown[]).map(String).filter(Boolean)
+      : undefined;
+
     return {
       title,
       description: String(obj.description ?? '').trim(),
       tags: Array.isArray(obj.tags) ? (obj.tags as unknown[]).map(String) : [],
       metrics,
       analysis: obj.analysis ? String(obj.analysis).trim() : undefined,
+      derivedFromIds,
     };
   } catch {
     return null;

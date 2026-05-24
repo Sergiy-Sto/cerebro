@@ -112,6 +112,12 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
       for (let i = 0; i < STAGES.length; i++) {
         const stage = STAGES[i];
 
+        // Skip user-input stages (Search Notes) — пользователь сам вставляет
+        if (stage.userInput) {
+          setAutoGenProgress(`${i + 1} / ${STAGES.length}: ${stage.label} (ручной ввод — пропускаем)`);
+          continue;
+        }
+
         // Skip stages that already had cards in the snapshot OR were generated this run
         const alreadyHas =
           cardsByStage(baseProject, stage.id).length > 0 ||
@@ -138,6 +144,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             status: 'neutral', parentId: null, createdAt: new Date().toISOString(),
             metrics: gen.metrics, analysis: gen.analysis,
             model: selectedModel,
+            derivedFromIds: gen.derivedFromIds,
           };
           generatedCards.push(card);
           dispatch({ type: 'ADD_CARD', payload: { projectId: baseProject.id, card } });

@@ -30,4 +30,8 @@ export const STAGES: StageConfig[] = [
   { id: 'critic',            label: 'Критический разбор',          expectedCardType: 'critique',             order: 11, bg: 'bg-amber-50',   border: 'border-amber-400',  text: 'text-amber-700'  },
   { id: 'shortlist',         label: 'Шортлист',                    expectedCardType: 'hypothesis',           order: 12, bg: 'bg-lime-50',    border: 'border-lime-400',   text: 'text-lime-700'   },
   { id: 'validation',        label: 'План валидации',              expectedCardType: 'validation_test',      order: 13, bg: 'bg-sky-50',     border: 'border-sky-400',    text: 'text-sky-700'    },
+  // — Legacy (для старых проектов чтобы не падало; в auto-all не участвуют) —
+  { id: 'definition',        label: '[legacy] Деконструкция',      expectedCardType: 'definition_element',   order: 100, bg: 'bg-gray-50',  border: 'border-gray-300',   text: 'text-gray-500',  userInput: true },
+  { id: 'invert',            label: '[legacy] Инверсия',           expectedCardType: 'inverted_assumption',  order: 101, bg: 'bg-gray-50',  border: 'border-gray-300',   text: 'text-gray-500',  userInput: true },
+  { id: 'search_plan',       label: '[legacy] Search Plan',        expectedCardType: 'search_task',          order: 102, bg: 'bg-gray-50',  border: 'border-gray-300',   text: 'text-gray-500',  userInput: true },
 ];

@@ -248,6 +248,24 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-24 · search button + fixes</div>
+      <div class="decision-title">Search Plan убран как отдельный этап — кнопка "Найти в интернете" на Observation Scan</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Этап Search Plan удалён из видимого списка (StageId оставлен в типах для legacy-данных). Вместо него на этапе Observation Scan появляется кнопка "🔍 Найти в интернете" — клик открывает модалку, AI генерирует 6-8 готовых Google-запросов на английском, каждый — кликабельная ссылка открывающая Google в новой вкладке. Кнопка "Открыть все" с staggered timing чтобы браузер не блокировал.<br>
+        <strong>Почему:</strong> Отдельный визуальный этап Search Plan создавал лишний клик и нагромождение в левой колонке. Теперь flow проще: Observation Scan → жмёшь "Найти" → смотришь Google → копируешь интересное в Search Notes → Reality Map Summary.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-24 · hotfix</div>
+      <div class="decision-title">gpt-5.x не поддерживает custom temperature — добавлен helper</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Введены helpers <code>supportsCustomTemperature(model)</code> и <code>isReasoningModel(model)</code>. Для gpt-5.x и o-series temperature не передаётся (только default = 1). Для o-series ещё используется <code>max_completion_tokens</code>.<br>
+        <strong>Почему:</strong> При попытке генерации с gpt-5.5 OpenAI возвращал ошибку <code>Unsupported value: 'temperature' does not support 0.85 with this model</code>. Раньше проверка была только <code>model.startsWith('o')</code>, но gpt-5.x тоже не принимает custom temperature.
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-24 · Reality Mapping arch v1</div>
       <div class="decision-title">Reality Mapping модуль вместо плоского Definition Deconstruction</div>
       <div class="decision-why">

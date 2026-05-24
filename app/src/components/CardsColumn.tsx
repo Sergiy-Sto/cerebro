@@ -6,6 +6,7 @@ import type { StoreAction } from '../state/store';
 import { getApiKey, generateCardsStream } from '../utils/openai';
 import { newId } from '../utils/id';
 import CardForm from './CardForm';
+import SearchModal from './SearchModal';
 
 interface CardsColumnProps {
   project: Project;
@@ -19,6 +20,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   const [showAddForm, setShowAddForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const autoGenKey = useRef('');
 
   const stageConfig = STAGES.find((s) => s.id === project.activeStageId)!;
@@ -210,6 +212,16 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
           </>
         )}
 
+        {/* Search button — только на Observation Scan когда есть карточки */}
+        {project.activeStageId === 'observation' && cards.length > 0 && (
+          <button
+            onClick={() => setShowSearchModal(true)}
+            className="w-full px-2 py-1.5 text-xs border border-blue-400 text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium"
+          >
+            🔍 Найти в интернете
+          </button>
+        )}
+
         <button
           onClick={() => setShowAddForm(true)}
           className="w-full px-2 py-1.5 text-xs border border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -257,6 +269,15 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
             setShowAddForm(false);
           }}
           onCancel={() => setShowAddForm(false)}
+        />
+      )}
+
+      {showSearchModal && (
+        <SearchModal
+          project={project}
+          observationCards={cards}
+          model={model}
+          onClose={() => setShowSearchModal(false)}
         />
       )}
 

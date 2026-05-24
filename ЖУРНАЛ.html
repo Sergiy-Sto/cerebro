@@ -403,6 +403,23 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">приоритет: ближайший · 2026-05-25</div>
+      <div class="decision-title">💰 Оптимизация стоимости API — главный рычаг: per-stage selector модели</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Один полный прогон проекта = ~$2.30 (17 обычных стейджей × $0.10 + Search Scan $0.60). 2-3 прогона в день = ~$6. При активной разработке это много.<br>
+        <strong>Решение (по приоритету эффекта):</strong>
+        <ol>
+          <li><strong>Per-stage selector модели</strong> — gpt-5.4-mini в 10× дешевле gpt-5.5 Instant. Простые блоки (Observation, JTBD, Users, Substitutes, Boundary Cases) → mini хватит. Сложные (Feature Challenge, Hypothesis, Critic, Shortlist, Validation, Search Scan синтез) → 5.5. <strong>Экономия 50-60%.</strong></li>
+          <li><strong>Фильтр контекста для late-stage</strong> — в Hypothesis Generation сейчас передаётся 15-20K токенов. Можно: только ★ marked карточки полностью + title всех остальных. <strong>Экономия 30% на late-stage.</strong> Минус: методология чуть слабее если пользователь забыл ★ отметить.</li>
+          <li><strong>Prompt caching через OpenAI</strong> — автоматический кэш для стабильных частей промпта. Нужно структурировать промпты: стабильное (правила формата) в начало, уникальное (контекст) в конец. <strong>Экономия 20-30%.</strong></li>
+          <li><strong>Лимит Search Scan: 8 поисков вместо 12</strong> — $0.60 → $0.40 за Search Scan. Качество чуть меньше.</li>
+        </ol>
+        <strong>Совокупно:</strong> $2.30 → ~$0.70-0.90 за полный прогон. $6/день → ~$2.50/день.<br>
+        <strong>Когда:</strong> следующая итерация после теста Module 01 на 2-3 реальных темах. До того — мониторим реальные расходы (если на тестах вылетит больше $10/день — приоритет растёт).
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">отложено · 2026-05-24 (когда станет продуктом)</div>
       <div class="decision-title">🔒 Бэкенд-прокси для OpenAI API — защита промптов и ключа</div>
       <div class="decision-why">

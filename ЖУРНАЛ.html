@@ -373,6 +373,16 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">отложено · 2026-05-24 (когда станет продуктом)</div>
+      <div class="decision-title">🔒 Бэкенд-прокси для OpenAI API — защита промптов и ключа</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Сейчас браузер напрямую стучит в OpenAI API. Любой пользователь через F12 → Network видит: полный system prompt, user prompt (вся методология), API key в Authorization header. Для MVP-теста это норм (юзер один — сам Sergiy, ключ свой), но при продуктизации — катастрофа.<br>
+        <strong>Решение:</strong> Добавить простой бэкенд-прокси (например на Cloudflare Workers / Vercel / отдельный Node на Hostinger в /nodejs/ — но не сейчас, не трогать!). Фронт отправляет только {"projectId": "X", "stageId": "observation"}. Бэкенд: собирает промпт, берёт ключ из env, зовёт OpenAI, стримит ответ обратно. Промпты и ключ — невидимы для клиента.<br>
+        <strong>Когда:</strong> Перед публичным запуском или когда захочется давать доступ другим людям без раздачи методологии.
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">отложено · 2026-05-24</div>
       <div class="decision-title">🕸 Визуализация графа связей карточек (derivedFromIds)</div>
       <div class="decision-why">

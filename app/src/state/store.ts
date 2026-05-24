@@ -90,7 +90,8 @@ function reducer(state: AppState, action: Action): AppState {
       return updateProjectInState(state, state.activeProjectId, (p) => ({
         ...p,
         activeStageId: action.payload.stageId,
-        selectedCardId: null,
+        // selectedCardId НЕ сбрасываем — пользователь может читать карточку пока streamятся новые
+        // стадии (включая переключение во время auto-all). Сам выберет другую когда захочет.
       }));
     }
 

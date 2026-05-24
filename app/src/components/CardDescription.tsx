@@ -71,15 +71,23 @@ function renderInline(text: string): ReactNode[] {
       remaining = remaining.slice(first.idx + first.match[0].length);
     } else if (first.type === 'url') {
       const url = first.match[0];
+      // Короткое отображение: только домен + первый сегмент пути
+      let display = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      if (display.length > 40) {
+        const slash = display.indexOf('/');
+        const domain = slash >= 0 ? display.slice(0, slash) : display;
+        display = domain + '/…';
+      }
       parts.push(
         <a
           key={`u-${keyCounter++}`}
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-cyan-600 hover:text-cyan-800 underline break-all"
+          className="text-gray-400 hover:text-gray-600 underline decoration-gray-300 hover:decoration-gray-500 text-xs"
+          title={url}
         >
-          {url.length > 50 ? url.slice(0, 47) + '…' : url}
+          {display}
         </a>
       );
       remaining = remaining.slice(first.idx + url.length);
@@ -139,6 +147,24 @@ export default function CardDescription({ text }: CardDescriptionProps) {
     }
 
     flushList();
+
+    // Callout-блок: tail-параграфы анализа (Missing Angles Check, Линейная мысль и т.д.)
+    const calloutMatch = line.match(/^(Возможно упустил|Missing Angles|Линейная мысль|Вывод|Заметка|Пробел|Что стоит проверить|Quality Check)[:\s—-]/i);
+    if (calloutMatch) {
+      const label = calloutMatch[1];
+      const rest = line.slice(calloutMatch[0].length).trim();
+      blocks.push(
+        <div key={`c-${key++}`} className="my-3 pl-3 border-l-2 border-gray-300 bg-gray-50 py-2 pr-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+            {label}
+          </p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            {renderInline(rest)}
+          </p>
+        </div>
+      );
+      continue;
+    }
 
     // Подзаголовок: строка заканчивается на ":" (и не слишком длинная)
     if (line.endsWith(':') && line.length < 120) {

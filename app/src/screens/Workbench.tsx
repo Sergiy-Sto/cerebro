@@ -23,7 +23,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [autoGenProgress, setAutoGenProgress] = useState('');
   const [autoGenError, setAutoGenError] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState('gpt-4.1');
+  const [selectedModel, setSelectedModel] = useState('gpt-5.5');
   const importRef = useRef<HTMLInputElement>(null);
   const projectRef = useRef(project);
   useEffect(() => { projectRef.current = project; }, [project]);
@@ -202,6 +202,9 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             disabled={isAutoGenerating}
             className="px-2 py-1.5 text-xs border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
           >
+            <option value="gpt-5.5">gpt-5.5</option>
+            <option value="gpt-5.4">gpt-5.4</option>
+            <option value="gpt-5.4-mini">gpt-5.4-mini</option>
             <option value="gpt-4.1">gpt-4.1</option>
             <option value="o4-mini">o4-mini</option>
             <option value="o3">o3</option>

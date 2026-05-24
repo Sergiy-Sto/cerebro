@@ -62,7 +62,7 @@ export async function generateCardsStream(
   contextCards: Card[],
   existingCards: Card[] = [],
   onCard: (card: GeneratedCard) => void,
-  model = 'gpt-4.1'
+  model = 'gpt-5.5'
 ): Promise<void> {
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
   const isReasoning = model.startsWith('o');

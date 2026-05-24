@@ -35,16 +35,42 @@ const STAGE_PROMPTS: Record<StageId, PromptFn> = {
   definition: (ctx, _prev, existing) => `${ctx}
 ${existingBlock(existing)}
 Stage: Definition Deconstruction
-Decompose the topic by looking at it through radically different lenses. Consider angles like: etymological, stakeholder, functional, systemic, temporal — but don't limit yourself to these. Pick the angles that reveal the most hidden or non-obvious aspects of this specific topic. Generate 5 cards, each = one distinct lens.
+This is the foundation. Everything downstream depends on the depth here. Shallow analysis now = shallow hypotheses later.
+
+STEP 1 — Classify the subject (write this silently, do not output it as a card):
+Is it (A) a physical object, (B) a process / activity / non-material entity, or (C) a hybrid? This determines which analytical lenses apply.
+
+STEP 2 — Generate 5 cards. Each card = one analytical lens from the list below. Pick the 5 that reveal the most non-obvious structure of THIS specific subject. For each: go deep on that one dimension — not a summary, but a structural X-ray.
+
+Available lenses (pick 5):
+1. НАЗНАЧЕНИЕ — all domains of use, functional AND symbolic/decorative. What non-obvious uses exist? What does it enable indirectly?
+2. СОСТАВ / СТРОЕНИЕ — for physical objects: materials, components, subsystems. For processes: stages, sub-processes, cycles. What is the minimum viable version? What is irreducible?
+3. ФОРМА / СТРУКТУРА — shape, format, architecture. What variations exist in the wild? What is fixed vs. configurable?
+4. КАК УСТРОЕНО / КОНСТРУКТИВ — key design decisions in its current form. What alternative implementations have been tried or could exist?
+5. ПОЛЬЗОВАТЕЛИ И КОНТЕКСТ ИСПОЛЬЗОВАНИЯ — who uses it, when, under what conditions? How do different user segments interact with it differently?
+6. ПРОИСХОЖДЕНИЕ И ЭВОЛЮЦИЯ — NOT etymology of the word. How did this thing come to exist? What original problem did it solve? How has it changed over decades? What direction is it moving in?
+7. ОБЯЗАТЕЛЬНЫЕ vs СЛУЧАЙНЫЕ ПРИЗНАКИ — which attributes are essential (remove them → it stops being X) vs. accidental (historical/cultural conventions that could be otherwise)? Name the irreducible core. The accidental attributes are where innovation hides.
+8. ГРАНИЧНЫЕ СЛУЧАИ И АНТАГОНИСТЫ — what looks like X but isn't? What competes with X or substitutes for it? Where does the definition break down? These edges reveal what the subject truly is.
+
+Rules:
+- Each card must surface something non-obvious — not a Wikipedia paragraph
+- End each description with: "→ Для анализа это означает: [one sharp implication for what to explore next]"
+- Depth beats breadth: one precise observation beats three generic ones
 
 ${FMT}`,
 
   invert: (ctx, prev, existing) => `${ctx}
-${prev ? `\nDefinition angles (★ = особо важные, используй их в первую очередь):\n${prev}` : ''}
+${prev ? `\nDefinition analysis (★ = особо важные — работай с ними в первую очередь):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Invert Assumptions
-From the definition angles above, extract the most deeply held implicit assumptions. For each: state the assumption clearly, then invert it completely. The inversion should feel surprising or even wrong at first — that's the point. Generate 5 cards.
-Title format: "Invert: <assumption>"
+From the structural analysis above, extract the deeply held implicit assumptions — especially from the "обязательные vs случайные признаки" and "граничные случаи" lenses if present. Focus on assumptions that are treated as obvious but are actually just conventions.
+
+For each card: state the assumption precisely, then invert it completely. The inversion should feel wrong or absurd at first — that's the signal you've hit something real.
+
+SELF-CHECK: If the inversion sounds like a known product or obvious idea, go deeper. The best inversions produce a moment of "wait, can you actually do that?"
+
+Generate 5 cards.
+Title format: "Инверсия: <assumption>"
 
 ${FMT}`,
 

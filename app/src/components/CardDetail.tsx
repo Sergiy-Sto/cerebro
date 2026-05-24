@@ -4,6 +4,7 @@ import { STAGES } from '../state/stages';
 import { getCard, cardsByStage } from '../state/selectors';
 import type { StoreAction } from '../state/store';
 import CardForm from './CardForm';
+import CardDescription from './CardDescription';
 import ConfirmDialog from './ConfirmDialog';
 
 interface CardDetailProps {
@@ -100,8 +101,36 @@ export default function CardDetail({ card, project, dispatch }: CardDetailProps)
           </button>
         )}
 
-        {/* Description */}
-        <p className="text-sm text-gray-700 whitespace-pre-wrap mb-4">{card.description}</p>
+        {/* Description (с разметкой: bullets, headings, markers, links) */}
+        <div className="mb-4">
+          <CardDescription text={card.description} />
+        </div>
+
+        {/* Sources (если карточка из Search Scan) */}
+        {card.sources && card.sources.length > 0 && (
+          <div className="mb-4 p-3 bg-cyan-50 border border-cyan-200">
+            <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide mb-2 flex items-center gap-2">
+              🌐 Источники ({card.sources.length})
+              {card.confidence === 'search_snippet_supported' && (
+                <span className="text-[10px] font-normal text-cyan-500 normal-case">snippets, не полный контент сайтов</span>
+              )}
+            </p>
+            <ul className="space-y-1">
+              {card.sources.map((src, i) => (
+                <li key={i} className="text-xs">
+                  <a
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-700 hover:text-cyan-900 hover:underline break-all"
+                  >
+                    {src.title || src.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Tags */}
         {card.tags.length > 0 && (

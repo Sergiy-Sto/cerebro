@@ -31,6 +31,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   // Refs для async-loop control (state не виден внутри уже-запущенной async function)
   const pauseRef = useRef(false);
   const stopRef = useRef(false);
+  const autoAllAbortRef = useRef<AbortController | null>(null);
   useEffect(() => { projectRef.current = project; }, [project]);
   useEffect(() => { pauseRef.current = isPaused; }, [isPaused]);
 
@@ -179,6 +180,10 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           stageLabel: stage.label,
         };
 
+        // Создаём новый AbortController на каждый стейдж — Stop сразу прервёт текущий fetch
+        const controller = new AbortController();
+        autoAllAbortRef.current = controller;
+
         if (stage.usesWebSearch) {
           await generateWithSearchStream(
             stage.id, baseProject, apiKey, contextCards, [],
@@ -191,14 +196,20 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
               }
             },
             selectedModel,
-            logContext
+            logContext,
+            controller.signal
           );
         } else {
-          await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel, logContext);
+          await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel, logContext, controller.signal);
         }
       }
     } catch (err) {
-      setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
+      // AbortError = пользователь нажал Stop — это не ошибка
+      const isAbort = (err instanceof DOMException && err.name === 'AbortError') ||
+                      (err instanceof Error && err.message.toLowerCase().includes('abort'));
+      if (!isAbort) {
+        setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
+      }
     } finally {
       setIsAutoGenerating(false);
       setIsPaused(false);
@@ -217,6 +228,8 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     setIsPaused(false);
     pauseRef.current = false;
     setAutoGenProgress('🛑 Остановка...');
+    // Мгновенно прерываем текущий fetch — не ждём конца стейджа
+    autoAllAbortRef.current?.abort();
   }
 
   function handleGoToProjects() {

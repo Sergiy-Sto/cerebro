@@ -21,6 +21,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   const [genError, setGenError] = useState<string | null>(null);
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null);
   const autoGenKey = useRef('');
+  const abortRef = useRef<AbortController | null>(null);
 
   const stageConfig = STAGES.find((s) => s.id === project.activeStageId)!;
   const cards = cardsByStage(project, project.activeStageId).sort((a, b) => a.number - b.number);
@@ -69,6 +70,9 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
     setIsGenerating(true);
     setGenError(null);
     setSearchProgress(null);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const prevStageIds = STAGES.filter((s) => s.order < stageConfig.order).map((s) => s.id);
@@ -119,22 +123,36 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
           onCard,
           (p) => setSearchProgress(p),
           model,
-          logContext
+          logContext,
+          controller.signal
         );
       } else {
         await generateCardsStream(
           project.activeStageId, project, apiKey, contextCards, existingCards,
           onCard,
           model,
-          logContext
+          logContext,
+          controller.signal
         );
       }
     } catch (err) {
-      setGenError(err instanceof Error ? err.message : 'Ошибка генерации');
+      // AbortError = пользователь нажал Stop, это не ошибка
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // silent
+      } else if (err instanceof Error && err.message.includes('aborted')) {
+        // silent
+      } else {
+        setGenError(err instanceof Error ? err.message : 'Ошибка генерации');
+      }
     } finally {
       setIsGenerating(false);
       setSearchProgress(null);
+      abortRef.current = null;
     }
+  }
+
+  function handleStop() {
+    abortRef.current?.abort();
   }
 
   return (
@@ -213,40 +231,51 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
       {/* Sticky bottom */}
       <div className="border-t border-gray-200 px-3 py-3 space-y-2">
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleGenerate(false)}
-            disabled={isGenerating || cards.length > 0}
-            className={[
-              'flex-1 px-2 py-2 text-xs font-medium',
-              isGenerating || cards.length > 0
-                ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
-                : stageConfig.usesWebSearch
-                ? 'bg-cyan-600 text-white hover:bg-cyan-700'
-                : 'bg-violet-600 text-white hover:bg-violet-700',
-            ].join(' ')}
-          >
-            {isGenerating && cards.length === 0
-              ? (stageConfig.usesWebSearch ? '🌐 Ищу…' : '⏳ Генерирую…')
-              : (stageConfig.usesWebSearch ? '🌐 Запустить поиск' : '⚡ Генерировать')}
-          </button>
-          <button
-            onClick={() => handleGenerate(true)}
-            disabled={isGenerating || cards.length === 0}
-            className={[
-              'flex-1 px-2 py-2 text-xs font-medium border',
-              isGenerating && cards.length > 0
-                ? 'border-violet-200 text-violet-400 cursor-not-allowed'
-                : cards.length === 0
-                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                : 'border-violet-400 text-violet-700 hover:bg-violet-50',
-            ].join(' ')}
-          >
-            {isGenerating && cards.length > 0
-              ? '⏳ Думаю…'
-              : (stageConfig.usesWebSearch ? '💡 Ещё поиск' : '💡 Думай ещё')}
-          </button>
-        </div>
+        {isGenerating ? (
+          <div className="flex gap-2">
+            <div className="flex-1 px-2 py-2 text-xs font-medium bg-violet-100 text-violet-600 text-center">
+              {cards.length === 0
+                ? (stageConfig.usesWebSearch ? '🌐 Ищу…' : '⏳ Генерирую…')
+                : '⏳ Думаю…'}
+            </div>
+            <button
+              onClick={handleStop}
+              className="px-3 py-2 text-xs font-medium border border-red-400 text-red-700 bg-red-50 hover:bg-red-100"
+              title="Прервать генерацию"
+            >
+              🛑 Стоп
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleGenerate(false)}
+              disabled={cards.length > 0}
+              className={[
+                'flex-1 px-2 py-2 text-xs font-medium',
+                cards.length > 0
+                  ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
+                  : stageConfig.usesWebSearch
+                  ? 'bg-cyan-600 text-white hover:bg-cyan-700'
+                  : 'bg-violet-600 text-white hover:bg-violet-700',
+              ].join(' ')}
+            >
+              {stageConfig.usesWebSearch ? '🌐 Запустить поиск' : '⚡ Генерировать'}
+            </button>
+            <button
+              onClick={() => handleGenerate(true)}
+              disabled={cards.length === 0}
+              className={[
+                'flex-1 px-2 py-2 text-xs font-medium border',
+                cards.length === 0
+                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                  : 'border-violet-400 text-violet-700 hover:bg-violet-50',
+              ].join(' ')}
+            >
+              {stageConfig.usesWebSearch ? '💡 Ещё поиск' : '💡 Думай ещё'}
+            </button>
+          </div>
+        )}
 
         {genError && <p className="text-xs text-red-500 break-words">{genError}</p>}
 

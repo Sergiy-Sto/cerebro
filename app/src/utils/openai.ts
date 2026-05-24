@@ -95,7 +95,8 @@ export async function generateCardsStream(
   existingCards: Card[] = [],
   onCard: (card: GeneratedCard) => void,
   model = 'gpt-5.5',
-  logContext?: LogContext
+  logContext?: LogContext,
+  signal?: AbortSignal
 ): Promise<void> {
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
   let usagePromptTokens = 0;
@@ -103,6 +104,7 @@ export async function generateCardsStream(
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
+    signal,
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -223,7 +225,8 @@ export async function generateWithSearchStream(
   onCard: (card: GeneratedCard) => void,
   onProgress?: (p: SearchProgress) => void,
   model = 'gpt-5.5',
-  logContext?: LogContext
+  logContext?: LogContext,
+  signal?: AbortSignal
 ): Promise<void> {
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
   let usageInput = 0;
@@ -231,6 +234,7 @@ export async function generateWithSearchStream(
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
+    signal,
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',

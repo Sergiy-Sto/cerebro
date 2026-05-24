@@ -23,6 +23,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [autoGenProgress, setAutoGenProgress] = useState('');
   const [autoGenError, setAutoGenError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1');
   const importRef = useRef<HTMLInputElement>(null);
   const projectRef = useRef(project);
   useEffect(() => { projectRef.current = project; }, [project]);
@@ -121,9 +122,9 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         dispatch({ type: 'SET_ACTIVE_STAGE', payload: { stageId: stage.id } });
 
         const prevIds = STAGES.filter(s => s.order < stage.order).map(s => s.id);
-        // Context: ★-marked from snapshot + everything generated this run in prev stages
+        // Context: all cards from prev stages in snapshot + everything generated this run
         const contextCards = [
-          ...baseProject.cards.filter(c => prevIds.includes(c.stageId) && c.status === 'interesting'),
+          ...baseProject.cards.filter(c => prevIds.includes(c.stageId)),
           ...generatedCards.filter(c => prevIds.includes(c.stageId)),
         ].filter((c, idx, arr) => arr.findIndex(x => x.id === c.id) === idx);
 
@@ -136,10 +137,11 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             title: gen.title, description: gen.description, tags: gen.tags,
             status: 'neutral', parentId: null, createdAt: new Date().toISOString(),
             metrics: gen.metrics, analysis: gen.analysis,
+            model: selectedModel,
           };
           generatedCards.push(card);
           dispatch({ type: 'ADD_CARD', payload: { projectId: baseProject.id, card } });
-        });
+        }, selectedModel);
       }
     } catch (err) {
       setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
@@ -194,6 +196,16 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           >
             {__GIT_HASH__}
           </a>
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            disabled={isAutoGenerating}
+            className="px-2 py-1.5 text-xs border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+          >
+            <option value="gpt-4.1">gpt-4.1</option>
+            <option value="o4-mini">o4-mini</option>
+            <option value="o3">o3</option>
+          </select>
           <button
             onClick={handleAutoGenerateAll}
             disabled={isAutoGenerating || !hasApiKey}
@@ -262,6 +274,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           dispatch={dispatch}
           onOpenApiKey={() => setShowApiKeyModal(true)}
           autoGenerating={isAutoGenerating}
+          model={selectedModel}
         />
         <CardDetail card={selectedCard} project={project} dispatch={dispatch} />
       </div>

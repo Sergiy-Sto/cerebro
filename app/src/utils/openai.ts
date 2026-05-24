@@ -61,9 +61,11 @@ export async function generateCardsStream(
   apiKey: string,
   contextCards: Card[],
   existingCards: Card[] = [],
-  onCard: (card: GeneratedCard) => void
+  onCard: (card: GeneratedCard) => void,
+  model = 'gpt-4.1'
 ): Promise<void> {
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
+  const isReasoning = model.startsWith('o');
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -72,7 +74,7 @@ export async function generateCardsStream(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4.1',
+      model,
       messages: [
         {
           role: 'system',
@@ -81,7 +83,7 @@ export async function generateCardsStream(
         { role: 'user', content: prompt },
       ],
       stream: true,
-      temperature: 0.85,
+      ...(isReasoning ? { max_completion_tokens: 8000 } : { temperature: 0.85 }),
     }),
   });
 

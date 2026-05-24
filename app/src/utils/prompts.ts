@@ -1,16 +1,16 @@
 import type { StageId, Project, Card } from '../state/types';
 
 function formatContext(project: Project): string {
-  const parts = [`Topic: ${project.frame}`];
+  const parts = [`ТЕМА (держи в фокусе на протяжении всего ответа): ${project.frame}`];
   if (project.constraints.length > 0)
-    parts.push(`Constraints: ${project.constraints.join('; ')}`);
+    parts.push(`Ограничения: ${project.constraints.join('; ')}`);
   if (project.criteria.length > 0)
-    parts.push(`Success criteria: ${project.criteria.join('; ')}`);
+    parts.push(`Критерии успеха: ${project.criteria.join('; ')}`);
   return parts.join('\n');
 }
 
 function formatCards(cards: Card[]): string {
-  return cards.map((c) => `- ${c.title}: ${c.description}`).join('\n');
+  return cards.map((c) => `- ${c.status === 'interesting' ? '★ ' : ''}${c.title}: ${c.description}`).join('\n');
 }
 
 function existingBlock(existing: string): string {
@@ -40,7 +40,7 @@ Decompose the topic by looking at it through radically different lenses. Conside
 ${FMT}`,
 
   invert: (ctx, prev, existing) => `${ctx}
-${prev ? `\nDefinition angles (★ selected):\n${prev}` : ''}
+${prev ? `\nDefinition angles (★ = особо важные, используй их в первую очередь):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Invert Assumptions
 From the definition angles above, extract the most deeply held implicit assumptions. For each: state the assumption clearly, then invert it completely. The inversion should feel surprising or even wrong at first — that's the point. Generate 5 cards.
@@ -49,7 +49,7 @@ Title format: "Invert: <assumption>"
 ${FMT}`,
 
   friction: (ctx, prev, existing) => `${ctx}
-${prev ? `\nKey angles:\n${prev}` : ''}
+${prev ? `\nKey angles (★ = особо важные):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Friction Map
 Identify the most painful friction points in this topic. Be specific: WHO experiences it, WHEN, and what exactly breaks down. Focus on moments where time, money, or energy is wasted or where people give up. Generate 5 cards.
@@ -57,7 +57,7 @@ Identify the most painful friction points in this topic. Be specific: WHO experi
 ${FMT}`,
 
   contradiction: (ctx, prev, existing) => `${ctx}
-${prev ? `\nFriction points:\n${prev}` : ''}
+${prev ? `\nFriction points (★ = особо важные):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Contradiction Finder
 Surface the core tensions in this space. Format: "X requires Y but also requires NOT-Y." These contradictions are where breakthroughs live — the places where conventional solutions fail because satisfying one requirement violates another. Generate 5 cards.
@@ -65,7 +65,7 @@ Surface the core tensions in this space. Format: "X requires Y but also requires
 ${FMT}`,
 
   cross_field: (ctx, prev, existing) => `${ctx}
-${prev ? `\nContradictions:\n${prev}` : ''}
+${prev ? `\nContradictions (★ = особо важные, ищи аналоги прежде всего для них):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Cross-field Transfer
 For each contradiction above, find a different industry or business sector that faced a structurally identical tension and solved it.
@@ -83,7 +83,7 @@ Title format: "<Industry>: <principle>"
 ${FMT}`,
 
   opportunity: (ctx, prev, existing) => `${ctx}
-${prev ? `\nCross-field insights:\n${prev}` : ''}
+${prev ? `\nCross-field insights (★ = особо важные):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Opportunity Tree
 Synthesize the insights so far into concrete opportunity spaces. For each: name the beneficiary, the unmet need, and what makes it now possible. Not hypotheses yet — just directions worth exploring. Generate 5 cards.
@@ -91,7 +91,7 @@ Synthesize the insights so far into concrete opportunity spaces. For each: name 
 ${FMT}`,
 
   hypothesis: (ctx, prev, existing) => `${ctx}
-${prev ? `\nOpportunity spaces:\n${prev}` : ''}
+${prev ? `\nOpportunity spaces (★ = особо важные):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Hypothesis Generation
 Turn the selected opportunities into testable business hypotheses. Format: "We believe [specific customer] will [specific action] because [insight], resulting in [business outcome]." Each must be falsifiable — you should be able to imagine an experiment that proves it wrong. Generate 5 cards.
@@ -99,7 +99,7 @@ Turn the selected opportunities into testable business hypotheses. Format: "We b
 ${FMT_METRICS}`,
 
   critic: (ctx, prev, existing) => `${ctx}
-${prev ? `\nHypotheses to critique:\n${prev}` : ''}
+${prev ? `\nHypotheses to critique (★ = приоритетные для критики):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Critic Pass
 For each hypothesis above, be its harshest critic. What are the 3 most likely failure modes? What assumptions must hold true? Is there prior art that tried this and failed? Be ruthlessly honest — a weak critique is useless. Generate one critique card per hypothesis.
@@ -109,7 +109,7 @@ For metrics: novelty = how non-obvious this failure mode is, strength = how fata
 ${FMT_METRICS}`,
 
   shortlist: (ctx, prev, existing) => `${ctx}
-${prev ? `\nHypotheses + critiques:\n${prev}` : ''}
+${prev ? `\nHypotheses + critiques (★ = особо интересные):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Shortlist
 ${existing
@@ -120,7 +120,7 @@ Title format: "#<rank>: <hypothesis name>"
 ${FMT_METRICS}`,
 
   validation: (ctx, prev, existing) => `${ctx}
-${prev ? `\nShortlisted hypotheses:\n${prev}` : ''}
+${prev ? `\nShortlisted hypotheses (★ = проверять в первую очередь):\n${prev}` : ''}
 ${existingBlock(existing)}
 Stage: Validation Plan
 For each shortlisted hypothesis, design the cheapest and fastest test that could prove or disprove it. Specify: what exactly to test, how to test it (no-code / manual ok), what metric = true, what metric = false, and rough time+cost estimate. Generate 1-2 test cards per hypothesis.

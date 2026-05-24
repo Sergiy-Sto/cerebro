@@ -87,6 +87,7 @@ export default function CardDetail({ card, project, dispatch }: CardDetailProps)
           <span>{stageConfig.label}</span>
           <span>·</span>
           <span>#{card.number}</span>
+          {card.model && <><span>·</span><span className="text-violet-400 font-mono">{card.model}</span></>}
         </div>
 
         {/* Parent link */}

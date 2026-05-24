@@ -12,9 +12,10 @@ interface CardsColumnProps {
   dispatch: Dispatch<StoreAction>;
   onOpenApiKey: () => void;
   autoGenerating?: boolean;
+  model?: string;
 }
 
-export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGenerating }: CardsColumnProps) {
+export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGenerating, model = 'gpt-4.1' }: CardsColumnProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -69,9 +70,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
     try {
       const prevStageIds = STAGES.filter((s) => s.order < stageConfig.order).map((s) => s.id);
-      const contextCards = project.cards.filter(
-        (c) => prevStageIds.includes(c.stageId) && c.status === 'interesting'
-      );
+      const contextCards = project.cards.filter((c) => prevStageIds.includes(c.stageId));
       const existingCards = isThinkMore ? cards : [];
 
       const stageCards = cardsByStage(project, project.activeStageId);
@@ -98,10 +97,12 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                 createdAt: new Date().toISOString(),
                 metrics: gen.metrics,
                 analysis: gen.analysis,
+                model,
               },
             },
           });
-        }
+        },
+        model
       );
     } catch (err) {
       setGenError(err instanceof Error ? err.message : 'Ошибка генерации');
@@ -147,7 +148,10 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                     <span className="flex-1 truncate text-gray-800 font-medium">{card.title}</span>
                   </div>
                   <div className="ml-7 mt-0.5 flex flex-col gap-0.5">
-                    <span className="text-xs text-gray-400">{card.type.replace(/_/g, ' ')}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-gray-400">{card.type.replace(/_/g, ' ')}</span>
+                      {card.model && <span className="text-xs text-violet-400 font-mono">{card.model}</span>}
+                    </div>
                     {card.parentId && (
                       <span className="text-xs text-gray-400">{getParentLabel(card.parentId)}</span>
                     )}

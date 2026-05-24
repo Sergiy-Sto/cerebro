@@ -30,6 +30,7 @@ export interface Card {
   createdAt: string;
   metrics?: CardMetrics;
   analysis?: string;
+  model?: string;
 }
 
 export interface Project {

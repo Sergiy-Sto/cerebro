@@ -2,10 +2,10 @@ import { useRef, useState, useEffect, type Dispatch, type ChangeEvent } from 're
 import type { Project, Card } from '../state/types';
 import type { StoreAction } from '../state/store';
 import { getCard, cardsByStage } from '../state/selectors';
-import { STAGES } from '../state/stages';
+import { STAGES, FIRST_STAGE_ID } from '../state/stages';
 import { downloadJson } from '../utils/download';
 import { newId } from '../utils/id';
-import { getApiKey, generateCardsStream } from '../utils/openai';
+import { getApiKey, generateCardsStream, generateWithSearchStream } from '../utils/openai';
 import StagesColumn from '../components/StagesColumn';
 import CardsColumn from '../components/CardsColumn';
 import CardDetail from '../components/CardDetail';
@@ -27,6 +27,16 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   const importRef = useRef<HTMLInputElement>(null);
   const projectRef = useRef(project);
   useEffect(() => { projectRef.current = project; }, [project]);
+
+  // Migration: если activeStageId указывает на несуществующий stage
+  // (старые проекты с definition/invert/observation/etc) — переключаем на первый.
+  useEffect(() => {
+    const isValid = STAGES.some((s) => s.id === project.activeStageId);
+    if (!isValid) {
+      dispatch({ type: 'SET_ACTIVE_STAGE', payload: { stageId: FIRST_STAGE_ID } });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id]);
 
   // Auto-start on new empty projects
   const autoStarted = useRef(false);
@@ -71,7 +81,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         const imported: Project = {
           ...data,
           id: newId(),
-          activeStageId: data.activeStageId ?? 'definition',
+          activeStageId: data.activeStageId ?? FIRST_STAGE_ID,
           selectedCardId: null,
           createdAt: data.createdAt ?? now,
           updatedAt: now,
@@ -112,19 +122,13 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
       for (let i = 0; i < STAGES.length; i++) {
         const stage = STAGES[i];
 
-        // Skip user-input stages (Search Notes) — пользователь сам вставляет
-        if (stage.userInput) {
-          setAutoGenProgress(`${i + 1} / ${STAGES.length}: ${stage.label} (ручной ввод — пропускаем)`);
-          continue;
-        }
-
         // Skip stages that already had cards in the snapshot OR were generated this run
         const alreadyHas =
           cardsByStage(baseProject, stage.id).length > 0 ||
           generatedCards.some(c => c.stageId === stage.id);
         if (alreadyHas) continue;
 
-        setAutoGenProgress(`${i + 1} / ${STAGES.length}: ${stage.label}`);
+        setAutoGenProgress(`${i + 1} / ${STAGES.length}: ${stage.label}${stage.usesWebSearch ? ' (🌐 поиск)' : ''}`);
         dispatch({ type: 'SET_ACTIVE_STAGE', payload: { stageId: stage.id } });
 
         const prevIds = STAGES.filter(s => s.order < stage.order).map(s => s.id);
@@ -135,7 +139,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         ].filter((c, idx, arr) => arr.findIndex(x => x.id === c.id) === idx);
 
         let maxNum = 0;
-        await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], (gen) => {
+        const onCard = (gen: any) => {
           maxNum++;
           const card: Card = {
             id: newId(), number: maxNum, stageId: stage.id,
@@ -145,10 +149,29 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             metrics: gen.metrics, analysis: gen.analysis,
             model: selectedModel,
             derivedFromIds: gen.derivedFromIds,
+            sources: gen.sources,
+            confidence: stage.usesWebSearch ? 'search_snippet_supported' : 'assumed',
           };
           generatedCards.push(card);
           dispatch({ type: 'ADD_CARD', payload: { projectId: baseProject.id, card } });
-        }, selectedModel);
+        };
+
+        if (stage.usesWebSearch) {
+          await generateWithSearchStream(
+            stage.id, baseProject, apiKey, contextCards, [],
+            onCard,
+            (p) => {
+              if (p.phase === 'searching' && p.currentQuery) {
+                setAutoGenProgress(`${i + 1} / ${STAGES.length}: 🔍 ${p.queriesCount}/12 — "${p.currentQuery.slice(0, 50)}"`);
+              } else if (p.phase === 'writing') {
+                setAutoGenProgress(`${i + 1} / ${STAGES.length}: ✍ Синтезирую (${p.queriesCount} поисков)`);
+              }
+            },
+            selectedModel
+          );
+        } else {
+          await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel);
+        }
       }
     } catch (err) {
       setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
@@ -208,13 +231,14 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             onChange={(e) => setSelectedModel(e.target.value)}
             disabled={isAutoGenerating}
             className="px-2 py-1.5 text-xs border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+            title="Модель OpenAI. o-series retired в 2026, остались gpt-5.x"
           >
-            <option value="gpt-5.5">gpt-5.5</option>
+            <option value="gpt-5.5">gpt-5.5 (Instant — дефолт)</option>
+            <option value="gpt-5.4-thinking">gpt-5.4 Thinking</option>
+            <option value="gpt-5.4-pro">gpt-5.4 Pro</option>
             <option value="gpt-5.4">gpt-5.4</option>
             <option value="gpt-5.4-mini">gpt-5.4-mini</option>
-            <option value="gpt-4.1">gpt-4.1</option>
-            <option value="o4-mini">o4-mini</option>
-            <option value="o3">o3</option>
+            <option value="gpt-4.1">gpt-4.1 (legacy)</option>
           </select>
           <button
             onClick={handleAutoGenerateAll}

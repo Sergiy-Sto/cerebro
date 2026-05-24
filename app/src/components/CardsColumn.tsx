@@ -3,10 +3,9 @@ import type { Project } from '../state/types';
 import { STAGES } from '../state/stages';
 import { cardsByStage, statsForStage, getCard } from '../state/selectors';
 import type { StoreAction } from '../state/store';
-import { getApiKey, generateCardsStream } from '../utils/openai';
+import { getApiKey, generateCardsStream, generateWithSearchStream, type SearchProgress } from '../utils/openai';
 import { newId } from '../utils/id';
 import CardForm from './CardForm';
-import SearchModal from './SearchModal';
 
 interface CardsColumnProps {
   project: Project;
@@ -16,11 +15,11 @@ interface CardsColumnProps {
   model?: string;
 }
 
-export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGenerating, model = 'gpt-4.1' }: CardsColumnProps) {
+export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGenerating, model = 'gpt-5.5' }: CardsColumnProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
-  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null);
   const autoGenKey = useRef('');
 
   const stageConfig = STAGES.find((s) => s.id === project.activeStageId)!;
@@ -35,7 +34,6 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   useEffect(() => {
     if (autoGenerating) return;
     if (project.cards.length === 0) return; // свежий проект — auto-all в Workbench
-    if (stageConfig.userInput) return; // ручной ввод — не генерируем
     const key = `${project.id}:${project.activeStageId}`;
     if (cards.length === 0 && getApiKey() && !isGenerating && autoGenKey.current !== key) {
       autoGenKey.current = key;
@@ -70,6 +68,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
     setIsGenerating(true);
     setGenError(null);
+    setSearchProgress(null);
 
     try {
       const prevStageIds = STAGES.filter((s) => s.order < stageConfig.order).map((s) => s.id);
@@ -79,39 +78,53 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
       const stageCards = cardsByStage(project, project.activeStageId);
       let maxNum = stageCards.reduce((m, c) => Math.max(m, c.number), 0);
 
-      await generateCardsStream(
-        project.activeStageId, project, apiKey, contextCards, existingCards,
-        (gen) => {
-          maxNum++;
-          dispatch({
-            type: 'ADD_CARD',
-            payload: {
-              projectId: project.id,
-              card: {
-                id: newId(),
-                number: maxNum,
-                stageId: project.activeStageId,
-                type: stageConfig.expectedCardType,
-                title: gen.title,
-                description: gen.description,
-                tags: gen.tags,
-                status: 'neutral',
-                parentId: null,
-                createdAt: new Date().toISOString(),
-                metrics: gen.metrics,
-                analysis: gen.analysis,
-                model,
-                derivedFromIds: gen.derivedFromIds,
-              },
+      const onCard = (gen: { title: string; description: string; tags: string[]; metrics?: any; analysis?: string; derivedFromIds?: string[]; sources?: { title: string; url: string }[] }) => {
+        maxNum++;
+        dispatch({
+          type: 'ADD_CARD',
+          payload: {
+            projectId: project.id,
+            card: {
+              id: newId(),
+              number: maxNum,
+              stageId: project.activeStageId,
+              type: stageConfig.expectedCardType,
+              title: gen.title,
+              description: gen.description,
+              tags: gen.tags,
+              status: 'neutral',
+              parentId: null,
+              createdAt: new Date().toISOString(),
+              metrics: gen.metrics,
+              analysis: gen.analysis,
+              model,
+              derivedFromIds: gen.derivedFromIds,
+              sources: gen.sources,
+              confidence: stageConfig.usesWebSearch ? 'search_snippet_supported' : 'assumed',
             },
-          });
-        },
-        model
-      );
+          },
+        });
+      };
+
+      if (stageConfig.usesWebSearch) {
+        await generateWithSearchStream(
+          project.activeStageId, project, apiKey, contextCards, existingCards,
+          onCard,
+          (p) => setSearchProgress(p),
+          model
+        );
+      } else {
+        await generateCardsStream(
+          project.activeStageId, project, apiKey, contextCards, existingCards,
+          onCard,
+          model
+        );
+      }
     } catch (err) {
       setGenError(err instanceof Error ? err.message : 'Ошибка генерации');
     } finally {
       setIsGenerating(false);
+      setSearchProgress(null);
     }
   }
 
@@ -122,14 +135,33 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
         <h2 className={`text-base font-semibold ${stageConfig.text}`}>{stageConfig.label}</h2>
         <p className="text-xs text-gray-500 mt-0.5">
           {stats.total} карт · {stats.interesting}★ · {stats.discarded}✗
+          {stageConfig.usesWebSearch && <span className="ml-2 text-cyan-600">🌐 web search</span>}
         </p>
       </div>
 
       {/* Card list */}
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        {cards.length === 0 && (
+        {cards.length === 0 && !isGenerating && (
           <p className="text-sm text-gray-400 text-center mt-8">Карточек нет. Добавьте или сгенерируйте.</p>
         )}
+
+        {/* Search progress (только для web search stages) */}
+        {isGenerating && stageConfig.usesWebSearch && searchProgress && (
+          <div className="bg-cyan-50 border border-cyan-200 px-3 py-2 mb-2 text-xs">
+            {searchProgress.phase === 'searching' && (
+              <>
+                <p className="font-medium text-cyan-800">🔍 Поиск {searchProgress.queriesCount ?? ''}/12…</p>
+                {searchProgress.currentQuery && (
+                  <p className="text-cyan-600 mt-0.5 font-mono truncate">"{searchProgress.currentQuery}"</p>
+                )}
+              </>
+            )}
+            {searchProgress.phase === 'writing' && (
+              <p className="font-medium text-cyan-800">✍ Синтезирую найденное в карточки…</p>
+            )}
+          </div>
+        )}
+
         <ul className="space-y-1.5">
           {cards.map((card) => {
             const isSelected = project.selectedCardId === card.id;
@@ -155,6 +187,9 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-400">{card.type.replace(/_/g, ' ')}</span>
                       {card.model && <span className="text-xs text-violet-400 font-mono">{card.model}</span>}
+                      {card.sources && card.sources.length > 0 && (
+                        <span className="text-xs text-cyan-600">🌐 {card.sources.length}</span>
+                      )}
                     </div>
                     {card.parentId && (
                       <span className="text-xs text-gray-400">{getParentLabel(card.parentId)}</span>
@@ -169,58 +204,42 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
       {/* Sticky bottom */}
       <div className="border-t border-gray-200 px-3 py-3 space-y-2">
-        {stageConfig.userInput ? (
-          <div className="bg-zinc-50 border border-zinc-200 p-2.5 text-xs text-zinc-700">
-            <p className="font-medium mb-1">📝 Ручной ввод</p>
-            <p className="text-zinc-500">
-              Этот этап — для твоих собственных заметок: ссылки, цитаты, скриншоты, найденное в интернете.
-              AI здесь не генерирует — добавляй карточки вручную.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleGenerate(false)}
-                disabled={isGenerating || cards.length > 0}
-                className={[
-                  'flex-1 px-2 py-2 text-xs font-medium',
-                  isGenerating || cards.length > 0
-                    ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
-                    : 'bg-violet-600 text-white hover:bg-violet-700',
-                ].join(' ')}
-              >
-                {isGenerating && cards.length === 0 ? '⏳ Генерирую…' : '⚡ Генерировать'}
-              </button>
-              <button
-                onClick={() => handleGenerate(true)}
-                disabled={isGenerating || cards.length === 0}
-                className={[
-                  'flex-1 px-2 py-2 text-xs font-medium border',
-                  isGenerating && cards.length > 0
-                    ? 'border-violet-200 text-violet-400 cursor-not-allowed'
-                    : cards.length === 0
-                    ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                    : 'border-violet-400 text-violet-700 hover:bg-violet-50',
-                ].join(' ')}
-              >
-                {isGenerating && cards.length > 0 ? '⏳ Думаю…' : '💡 Думай ещё'}
-              </button>
-            </div>
-
-            {genError && <p className="text-xs text-red-500 break-words">{genError}</p>}
-          </>
-        )}
-
-        {/* Search button — только на Observation Scan когда есть карточки */}
-        {project.activeStageId === 'observation' && cards.length > 0 && (
+        <div className="flex gap-2">
           <button
-            onClick={() => setShowSearchModal(true)}
-            className="w-full px-2 py-1.5 text-xs border border-blue-400 text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium"
+            onClick={() => handleGenerate(false)}
+            disabled={isGenerating || cards.length > 0}
+            className={[
+              'flex-1 px-2 py-2 text-xs font-medium',
+              isGenerating || cards.length > 0
+                ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
+                : stageConfig.usesWebSearch
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700'
+                : 'bg-violet-600 text-white hover:bg-violet-700',
+            ].join(' ')}
           >
-            🔍 Найти в интернете
+            {isGenerating && cards.length === 0
+              ? (stageConfig.usesWebSearch ? '🌐 Ищу…' : '⏳ Генерирую…')
+              : (stageConfig.usesWebSearch ? '🌐 Запустить поиск' : '⚡ Генерировать')}
           </button>
-        )}
+          <button
+            onClick={() => handleGenerate(true)}
+            disabled={isGenerating || cards.length === 0}
+            className={[
+              'flex-1 px-2 py-2 text-xs font-medium border',
+              isGenerating && cards.length > 0
+                ? 'border-violet-200 text-violet-400 cursor-not-allowed'
+                : cards.length === 0
+                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                : 'border-violet-400 text-violet-700 hover:bg-violet-50',
+            ].join(' ')}
+          >
+            {isGenerating && cards.length > 0
+              ? '⏳ Думаю…'
+              : (stageConfig.usesWebSearch ? '💡 Ещё поиск' : '💡 Думай ещё')}
+          </button>
+        </div>
+
+        {genError && <p className="text-xs text-red-500 break-words">{genError}</p>}
 
         <button
           onClick={() => setShowAddForm(true)}
@@ -263,21 +282,13 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                   number: maxNum + 1,
                   status: 'neutral',
                   createdAt: new Date().toISOString(),
+                  confidence: 'user_provided',
                 },
               },
             });
             setShowAddForm(false);
           }}
           onCancel={() => setShowAddForm(false)}
-        />
-      )}
-
-      {showSearchModal && (
-        <SearchModal
-          project={project}
-          observationCards={cards}
-          model={model}
-          onClose={() => setShowSearchModal(false)}
         />
       )}
 

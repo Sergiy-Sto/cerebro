@@ -248,6 +248,36 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-25 · Module 01 deep decomposition</div>
+      <div class="decision-title">Reality Mapping разбит на 9 под-модулей в иерархии Модуль → Stage → Карточки</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Старый "Entity Mapping" (один stage с 16 измерениями в одной куче) переразложен на 9 отдельных под-модулей:
+        1.1 Observation Scan, 1.2 Search Scan (web search), 1.3 Fundamental Dimensions, 1.4 Obligatory vs Accidental, 1.5 Jobs-to-be-done, 1.6 Users/Actors, 1.7 Failure Modes, 1.8 Substitutes, 1.9 Boundary Cases.
+        Каждый под-модуль = отдельный stage + отдельный API-вызов + свои карточки. В левой колонке теперь иерархия: модули (4 шт) с раскрытием под-модулей.<br>
+        <strong>Почему:</strong> Один большой промпт на 8 концепций = модель смешивает блоки и срезает. Разделение даёт точность, контроль (можно перегенерить один блок), прогресс (стрим по каждому). Также Obligatory vs Accidental вынесен в отдельный stage — он критический мост к Module 02 Feature Challenge, в общей куче терялся.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-25 · Search Scan auto-search</div>
+      <div class="decision-title">Search Scan — реальный web search через OpenAI Responses API</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Под-модуль 1.2 Search Scan использует встроенный <code>web_search</code> tool через Responses API (новый endpoint <code>/v1/responses</code>). Модель сама делает до 12 поисковых запросов агентски, синтезирует найденное в карточки с источниками. Это light research mode — snippets only, без перехода на сайты. Стоимость ~$0.50-0.70 за Search Scan.<br>
+        <strong>Confidence маркер:</strong> <code>search_snippet_supported</code> (НЕ <code>evidence_supported</code>) — сниппет это слабое evidence. Сильное потребует deep research (отложено как кнопка "🔬 Углубиться" в Шаге 3).<br>
+        <strong>Прогресс:</strong> стрим — пользователь видит текущий запрос, счётчик 1/12, фазу синтеза. Источники прикрепляются к карточке в <code>Card.sources[]</code> и отображаются как badge "🌐 N".<br>
+        <strong>Архитектура поиска описана детально в Проект.md секция 3.1.</strong>
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-25 · model selector обновлён</div>
+      <div class="decision-title">o-series модели удалены из селектора — retired в феврале 2026</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Убраны o3 и o4-mini из селектора моделей. По данным OpenAI (проверено WebSearch) все o-series ретайрнуты, единственная активная семья — GPT-5.x. Добавлены актуальные: gpt-5.5 Instant (дефолт), gpt-5.4 Thinking, gpt-5.4 Pro, gpt-5.4, gpt-5.4-mini. gpt-4.1 оставлен с пометкой "legacy".
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-24 · search button + fixes</div>
       <div class="decision-title">Search Plan убран как отдельный этап — кнопка "Найти в интернете" на Observation Scan</div>
       <div class="decision-why">

@@ -2,6 +2,7 @@ import { useState, type Dispatch } from 'react';
 import type { AppState, Project } from '../state/types';
 import type { StoreAction } from '../state/store';
 import { newId } from '../utils/id';
+import { FIRST_STAGE_ID } from '../state/stages';
 import ProjectForm from './ProjectForm';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -25,7 +26,7 @@ export default function ProjectPicker({ state, dispatch }: ProjectPickerProps) {
       constraints: data.constraints,
       criteria: data.criteria,
       cards: [],
-      activeStageId: 'definition',
+      activeStageId: FIRST_STAGE_ID,
       selectedCardId: null,
       createdAt: now,
       updatedAt: now,

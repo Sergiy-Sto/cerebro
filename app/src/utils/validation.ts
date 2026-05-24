@@ -1,9 +1,17 @@
 import type { Card, CardType } from '../state/types';
 
 const VALID_CARD_TYPES: CardType[] = [
-  'definition_element',
-  'assumption',
-  'inverted_assumption',
+  'observation_item',
+  'search_finding',
+  'dimension',
+  'obligatory_feature',
+  'accidental_feature',
+  'job',
+  'actor',
+  'failure_mode',
+  'substitute',
+  'boundary_case',
+  'transformation_handle',
   'friction_point',
   'contradiction',
   'cross_field_analogy',

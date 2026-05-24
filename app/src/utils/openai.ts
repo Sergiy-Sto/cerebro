@@ -23,6 +23,7 @@ export interface GeneratedCard {
   metrics?: { novelty: number; strength: number; feasibility: number; testability: number };
   analysis?: string;
   derivedFromIds?: string[];
+  sources?: { title: string; url: string }[];
 }
 
 function parseCard(line: string): GeneratedCard | null {
@@ -75,66 +76,6 @@ function supportsCustomTemperature(model: string): boolean {
 /** Models that use max_completion_tokens instead of standard params. */
 function isReasoningModel(model: string): boolean {
   return model.startsWith('o');
-}
-
-export async function generateSearchQueries(
-  project: Project,
-  observationCards: Card[],
-  apiKey: string,
-  model = 'gpt-5.5'
-): Promise<string[]> {
-  const cardsText = observationCards.map(c => `- ${c.title}: ${c.description}`).join('\n');
-
-  const prompt = `Тема: ${project.frame}
-
-Карточки Observation Scan:
-${cardsText}
-
-Сгенерируй 6-8 коротких поисковых запросов в Google для расширения и проверки этой карты реальности.
-
-Покрой направления:
-- конкретные типы и разновидности темы
-- реальные проблемы пользователей (Reddit, форумы, отзывы)
-- существующие приложения, сервисы, конкуренты в этой нише
-- жалобы и критика существующих решений
-- заменители и обходные пути
-- межъязыковые варианты если уместно
-
-Запросы должны быть:
-- короткими (3-7 слов)
-- конкретными — не "renovation" а "renovation budget overrun reddit"
-- на английском (лучший охват в Google)
-- готовыми к вставке в Google как есть
-
-ВАЖНО: Верни ТОЛЬКО валидный JSON-объект, без markdown, без префикса:
-{"queries": ["query 1", "query 2", "query 3", ...]}`;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      ...(isReasoningModel(model) ? { max_completion_tokens: 1500 } : {}),
-      ...(supportsCustomTemperature(model) ? { temperature: 0.7 } : {}),
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
-    throw new Error(err?.error?.message ?? `OpenAI error ${response.status}`);
-  }
-
-  const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data.choices?.[0]?.message?.content ?? '{}';
-  try {
-    const parsed = JSON.parse(content) as { queries?: unknown };
-    if (Array.isArray(parsed.queries)) {
-      return parsed.queries.map(String).filter(Boolean);
-    }
-  } catch { /* fall through */ }
-  return [];
 }
 
 export async function generateCardsStream(
@@ -220,3 +161,154 @@ export async function generateCardsStream(
 
   flushAll();
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Web Search Stream — Responses API + built-in web_search tool
+// Используется в под-модуле 1.2 Search Scan
+// ─────────────────────────────────────────────────────────────────────
+
+export interface SearchProgress {
+  phase: 'searching' | 'writing' | 'done';
+  queriesCount?: number;
+  currentQuery?: string;
+}
+
+/**
+ * Генерирует карточки Search Scan через OpenAI Responses API + web_search tool.
+ * Модель сама делает 8-12 поисковых запросов через built-in web_search и синтезирует
+ * найденное в карточки с источниками. Карточки получают confidence='search_snippet_supported'.
+ *
+ * Поддерживает streaming: onCard вызывается при появлении новой карточки,
+ * onProgress — при изменении фазы (поиск / написание / готово).
+ *
+ * Стоимость: ~$0.50-0.70 за вызов при 8-12 поисках (per OpenAI pricing 2026).
+ */
+export async function generateWithSearchStream(
+  stageId: StageId,
+  project: Project,
+  apiKey: string,
+  contextCards: Card[],
+  existingCards: Card[] = [],
+  onCard: (card: GeneratedCard) => void,
+  onProgress?: (p: SearchProgress) => void,
+  model = 'gpt-5.5'
+): Promise<void> {
+  const prompt = buildPrompt(stageId, project, contextCards, existingCards);
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        {
+          role: 'system',
+          content: 'You are an expert business strategist with web search. Use the web_search tool for up to 12 search queries to enrich the reality map. Output ONLY raw JSON objects, one per line — each JSON object on its own line, no other text, no markdown. Always respond in Russian language.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      tools: [{ type: 'web_search' }],
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err?.error?.message ?? `OpenAI Responses API error ${response.status}`);
+  }
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = '';
+  let contentBuffer = '';
+  let searchCount = 0;
+  // Накапливаем источники из аннотаций — потом прикрепим к последней карточке
+  const pendingSources: { title: string; url: string }[] = [];
+
+  function flushLines() {
+    const lines = contentBuffer.split('\n');
+    contentBuffer = lines.pop() ?? '';
+    for (const line of lines) {
+      const card = parseCard(line);
+      if (card) {
+        if (pendingSources.length > 0) {
+          card.sources = [...pendingSources];
+          pendingSources.length = 0;
+        }
+        onCard(card);
+      }
+    }
+  }
+
+  function flushAll() {
+    flushLines();
+    const card = parseCard(contentBuffer);
+    if (card) {
+      if (pendingSources.length > 0) card.sources = [...pendingSources];
+      onCard(card);
+      contentBuffer = '';
+    }
+  }
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    sseBuffer += decoder.decode(value, { stream: true });
+    const sseLines = sseBuffer.split('\n');
+    sseBuffer = sseLines.pop() ?? '';
+
+    for (const sseLine of sseLines) {
+      if (!sseLine.startsWith('data: ')) continue;
+      const data = sseLine.slice(6).trim();
+      if (!data || data === '[DONE]') continue;
+
+      try {
+        const event = JSON.parse(data) as {
+          type?: string;
+          delta?: string;
+          item?: { type?: string; action?: { query?: string } };
+          annotation?: { type?: string; url?: string; title?: string };
+        };
+
+        // Текстовая дельта — основной выход модели
+        if (event.type === 'response.output_text.delta' && typeof event.delta === 'string') {
+          contentBuffer += event.delta;
+          flushLines();
+        }
+
+        // Аннотация (источник) — добавляется к выводу
+        if (event.type === 'response.output_text.annotation.added' && event.annotation) {
+          const a = event.annotation;
+          if (a.url) {
+            pendingSources.push({ title: a.title ?? a.url, url: a.url });
+          }
+        }
+
+        // Web search call события
+        if (event.type === 'response.web_search_call.in_progress' || event.type === 'response.web_search_call.searching') {
+          searchCount++;
+          const q = event.item?.action?.query;
+          onProgress?.({ phase: 'searching', queriesCount: searchCount, currentQuery: q });
+        }
+
+        if (event.type === 'response.output_item.added' && event.item?.type === 'message') {
+          onProgress?.({ phase: 'writing', queriesCount: searchCount });
+        }
+
+        if (event.type === 'response.completed') {
+          flushAll();
+          onProgress?.({ phase: 'done', queriesCount: searchCount });
+          return;
+        }
+      } catch { /* malformed SSE chunk */ }
+    }
+  }
+
+  flushAll();
+  onProgress?.({ phase: 'done', queriesCount: searchCount });
+}
+

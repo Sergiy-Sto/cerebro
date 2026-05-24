@@ -22,12 +22,17 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   const [showEditProject, setShowEditProject] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [autoGenProgress, setAutoGenProgress] = useState('');
   const [autoGenError, setAutoGenError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState('gpt-5.5');
   const importRef = useRef<HTMLInputElement>(null);
   const projectRef = useRef(project);
+  // Refs для async-loop control (state не виден внутри уже-запущенной async function)
+  const pauseRef = useRef(false);
+  const stopRef = useRef(false);
   useEffect(() => { projectRef.current = project; }, [project]);
+  useEffect(() => { pauseRef.current = isPaused; }, [isPaused]);
 
   // Migration: если activeStageId указывает на несуществующий stage
   // (старые проекты с definition/invert/observation/etc) — переключаем на первый.
@@ -114,6 +119,9 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     }
 
     setIsAutoGenerating(true);
+    setIsPaused(false);
+    pauseRef.current = false;
+    stopRef.current = false;
     setAutoGenError(null);
 
     // Local card accumulator — not affected by async React render timing
@@ -121,6 +129,13 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
 
     try {
       for (let i = 0; i < STAGES.length; i++) {
+        // Если на паузе — ждём пока снимут, проверяя каждые 250мс. Стоп — выход.
+        while (pauseRef.current && !stopRef.current) {
+          setAutoGenProgress(`⏸ Пауза на ${i + 1}/${STAGES.length}: ${STAGES[i].label}`);
+          await new Promise((r) => setTimeout(r, 250));
+        }
+        if (stopRef.current) break;
+
         const stage = STAGES[i];
 
         // Skip stages that already had cards in the snapshot OR were generated this run
@@ -186,8 +201,22 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
       setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
     } finally {
       setIsAutoGenerating(false);
+      setIsPaused(false);
+      pauseRef.current = false;
+      stopRef.current = false;
       setAutoGenProgress('');
     }
+  }
+
+  function handlePauseToggle() {
+    setIsPaused((p) => !p);
+  }
+
+  function handleStop() {
+    stopRef.current = true;
+    setIsPaused(false);
+    pauseRef.current = false;
+    setAutoGenProgress('🛑 Остановка...');
   }
 
   function handleGoToProjects() {
@@ -250,21 +279,46 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             <option value="gpt-5.4-mini">gpt-5.4-mini</option>
             <option value="gpt-4.1">gpt-4.1 (legacy)</option>
           </select>
-          <button
-            onClick={handleAutoGenerateAll}
-            disabled={isAutoGenerating || !hasApiKey}
-            title={!hasApiKey ? 'Сначала введите API ключ' : 'Сгенерировать все этапы по цепочке'}
-            className={[
-              'px-2.5 py-1.5 text-xs border',
-              isAutoGenerating
-                ? 'border-emerald-200 text-emerald-400 cursor-not-allowed'
-                : !hasApiKey
-                ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
-            ].join(' ')}
-          >
-            {isAutoGenerating ? `⏳ ${autoGenProgress}` : project.cards.length === 0 ? '🚀 Запустить всё' : '🔄 Перегенерировать'}
-          </button>
+          {!isAutoGenerating ? (
+            <button
+              onClick={handleAutoGenerateAll}
+              disabled={!hasApiKey}
+              title={!hasApiKey ? 'Сначала введите API ключ' : 'Сгенерировать все этапы по цепочке'}
+              className={[
+                'px-2.5 py-1.5 text-xs border',
+                !hasApiKey
+                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                  : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
+              ].join(' ')}
+            >
+              {project.cards.length === 0 ? '🚀 Запустить всё' : '🔄 Перегенерировать'}
+            </button>
+          ) : (
+            <div className="flex gap-1 items-center">
+              <span className="text-xs text-gray-500 max-w-[260px] truncate" title={autoGenProgress}>
+                {isPaused ? `⏸ ${autoGenProgress}` : `⏳ ${autoGenProgress}`}
+              </span>
+              <button
+                onClick={handlePauseToggle}
+                title={isPaused ? 'Продолжить с текущего стейджа' : 'Пауза после текущего стейджа'}
+                className={[
+                  'px-2.5 py-1.5 text-xs border font-medium',
+                  isPaused
+                    ? 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                    : 'border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100',
+                ].join(' ')}
+              >
+                {isPaused ? '▶ Продолжить' : '⏸ Пауза'}
+              </button>
+              <button
+                onClick={handleStop}
+                title="Остановить генерацию полностью"
+                className="px-2.5 py-1.5 text-xs border border-red-400 text-red-700 bg-red-50 hover:bg-red-100 font-medium"
+              >
+                🛑 Стоп
+              </button>
+            </div>
+          )}
           {autoGenError && (
             <span className="text-xs text-red-500 max-w-[160px] truncate" title={autoGenError}>
               {autoGenError}

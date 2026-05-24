@@ -106,18 +106,27 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
         });
       };
 
+      const logContext = {
+        projectId: project.id,
+        projectTitle: project.title,
+        stageId: stageConfig.id,
+        stageLabel: stageConfig.label,
+      };
+
       if (stageConfig.usesWebSearch) {
         await generateWithSearchStream(
           project.activeStageId, project, apiKey, contextCards, existingCards,
           onCard,
           (p) => setSearchProgress(p),
-          model
+          model,
+          logContext
         );
       } else {
         await generateCardsStream(
           project.activeStageId, project, apiKey, contextCards, existingCards,
           onCard,
-          model
+          model,
+          logContext
         );
       }
     } catch (err) {

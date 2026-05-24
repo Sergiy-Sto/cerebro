@@ -9,6 +9,7 @@ import { getApiKey, generateCardsStream, generateWithSearchStream } from '../uti
 import StagesColumn from '../components/StagesColumn';
 import CardsColumn from '../components/CardsColumn';
 import CardDetail from '../components/CardDetail';
+import CostBadge from '../components/CostBadge';
 import ProjectForm from './ProjectForm';
 import ApiKeyModal from '../components/ApiKeyModal';
 
@@ -156,6 +157,13 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           dispatch({ type: 'ADD_CARD', payload: { projectId: baseProject.id, card } });
         };
 
+        const logContext = {
+          projectId: baseProject.id,
+          projectTitle: baseProject.title,
+          stageId: stage.id,
+          stageLabel: stage.label,
+        };
+
         if (stage.usesWebSearch) {
           await generateWithSearchStream(
             stage.id, baseProject, apiKey, contextCards, [],
@@ -167,10 +175,11 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
                 setAutoGenProgress(`${i + 1} / ${STAGES.length}: ✍ Синтезирую (${p.queriesCount} поисков)`);
               }
             },
-            selectedModel
+            selectedModel,
+            logContext
           );
         } else {
-          await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel);
+          await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel, logContext);
         }
       }
     } catch (err) {
@@ -226,6 +235,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           >
             {__GIT_HASH__}
           </a>
+          <CostBadge />
           <select
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}

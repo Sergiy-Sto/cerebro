@@ -1,5 +1,14 @@
 import type { StageId, Project, Card } from '../state/types';
 import { buildPrompt } from './prompts';
+import { appendCostEntry } from './costLog';
+
+/** Опциональный контекст для cost logging. */
+export interface LogContext {
+  projectId: string;
+  projectTitle: string;
+  stageId: string;
+  stageLabel: string;
+}
 
 const API_KEY_STORAGE = 'cerebro_openai_key';
 
@@ -85,9 +94,12 @@ export async function generateCardsStream(
   contextCards: Card[],
   existingCards: Card[] = [],
   onCard: (card: GeneratedCard) => void,
-  model = 'gpt-5.5'
+  model = 'gpt-5.5',
+  logContext?: LogContext
 ): Promise<void> {
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
+  let usagePromptTokens = 0;
+  let usageCompletionTokens = 0;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -105,6 +117,7 @@ export async function generateCardsStream(
         { role: 'user', content: prompt },
       ],
       stream: true,
+      stream_options: { include_usage: true },
       ...(isReasoningModel(model) ? { max_completion_tokens: 8000 } : {}),
       ...(supportsCustomTemperature(model) ? { temperature: 0.85 } : {}),
     }),
@@ -149,17 +162,35 @@ export async function generateCardsStream(
       if (data === '[DONE]') { flushAll(); return; }
 
       try {
-        const chunk = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> };
+        const chunk = JSON.parse(data) as {
+          choices?: Array<{ delta?: { content?: string } }>;
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
         const delta = chunk.choices?.[0]?.delta?.content ?? '';
         if (delta) {
           contentBuffer += delta;
           flushLines();
+        }
+        // Usage приходит в финальном chunk когда stream_options.include_usage=true
+        if (chunk.usage) {
+          usagePromptTokens = chunk.usage.prompt_tokens ?? 0;
+          usageCompletionTokens = chunk.usage.completion_tokens ?? 0;
         }
       } catch { /* malformed SSE chunk */ }
     }
   }
 
   flushAll();
+
+  // Лог в cost log
+  if (logContext && (usagePromptTokens > 0 || usageCompletionTokens > 0)) {
+    appendCostEntry({
+      ...logContext,
+      model,
+      inputTokens: usagePromptTokens,
+      outputTokens: usageCompletionTokens,
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -191,9 +222,12 @@ export async function generateWithSearchStream(
   existingCards: Card[] = [],
   onCard: (card: GeneratedCard) => void,
   onProgress?: (p: SearchProgress) => void,
-  model = 'gpt-5.5'
+  model = 'gpt-5.5',
+  logContext?: LogContext
 ): Promise<void> {
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
+  let usageInput = 0;
+  let usageOutput = 0;
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -272,6 +306,7 @@ export async function generateWithSearchStream(
           delta?: string;
           item?: { type?: string; action?: { query?: string } };
           annotation?: { type?: string; url?: string; title?: string };
+          response?: { usage?: { input_tokens?: number; output_tokens?: number } };
         };
 
         // Текстовая дельта — основной выход модели
@@ -301,7 +336,20 @@ export async function generateWithSearchStream(
 
         if (event.type === 'response.completed') {
           flushAll();
+          if (event.response?.usage) {
+            usageInput = event.response.usage.input_tokens ?? 0;
+            usageOutput = event.response.usage.output_tokens ?? 0;
+          }
           onProgress?.({ phase: 'done', queriesCount: searchCount });
+          if (logContext) {
+            appendCostEntry({
+              ...logContext,
+              model,
+              inputTokens: usageInput,
+              outputTokens: usageOutput,
+              webSearchCalls: searchCount,
+            });
+          }
           return;
         }
       } catch { /* malformed SSE chunk */ }
@@ -310,5 +358,14 @@ export async function generateWithSearchStream(
 
   flushAll();
   onProgress?.({ phase: 'done', queriesCount: searchCount });
+  if (logContext) {
+    appendCostEntry({
+      ...logContext,
+      model,
+      inputTokens: usageInput,
+      outputTokens: usageOutput,
+      webSearchCalls: searchCount,
+    });
+  }
 }
 

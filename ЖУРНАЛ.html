@@ -403,6 +403,17 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-25 · cost log</div>
+      <div class="decision-title">💰 Cost log реализован — детальный учёт каждого API-вызова</div>
+      <div class="decision-why">
+        <strong>Решение:</strong> Каждый вызов OpenAI API (Chat Completions / Responses) логируется в localStorage с полями: project, stage, model, input/output tokens, web search calls, оценочная стоимость. В хедере appliances badge "💰 $X.XX" — клик открывает модалку с breakdown по стейджам / моделям / проектам, фильтр "Сегодня / Всё время".<br>
+        <strong>Зачем:</strong> Без cost log оптимизация вслепую. Через день видно "не приложение дорогое, а Hypothesis + Critic + Search жрут 70%" — целенаправленно режем именно их, остальное не трогаем.<br>
+        <strong>Цены:</strong> в <code>utils/pricing.ts</code> — таблица моделей gpt-5.x и web search. Обновлять при изменениях OpenAI.<br>
+        <strong>Badge цвета:</strong> серый (&lt;$1/день) / янтарь ($1-5) / красный (&gt;$5).
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">приоритет: ближайший · 2026-05-25</div>
       <div class="decision-title">💰 Оптимизация стоимости API — главный рычаг: per-stage selector модели</div>
       <div class="decision-why">

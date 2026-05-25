@@ -1,7 +1,7 @@
 import { useState, useRef, type Dispatch } from 'react';
 import type { Project } from '../state/types';
 import { STAGES } from '../state/stages';
-import { cardsByStage, statsForStage, getCard, cardLineage } from '../state/selectors';
+import { cardsByStage, statsForStage, getCard, cardLineage, getContextCardsForStage } from '../state/selectors';
 import type { StoreAction } from '../state/store';
 import { getApiKey, generateCardsStream, generateWithSearchStream, type SearchProgress } from '../utils/openai';
 import { newId } from '../utils/id';
@@ -72,9 +72,9 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
     abortRef.current = controller;
 
     try {
-      const prevStageIds = STAGES.filter((s) => s.order < stageConfig.order).map((s) => s.id);
-      // ✗ Отклонённые карточки не передаём в контекст — пользователь явно их выкинул
-      const contextCards = project.cards.filter((c) => prevStageIds.includes(c.stageId) && c.status !== 'discarded');
+      // Контекст с применением правил: предыдущие по order, без discarded,
+      // без целых модулей которые не нужны late-stage (см. selectors.ts)
+      const contextCards = getContextCardsForStage(project, stageConfig.id);
       const existingCards = isThinkMore ? cards : [];
 
       const stageCards = cardsByStage(project, project.activeStageId);

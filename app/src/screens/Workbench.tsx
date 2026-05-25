@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, type Dispatch, type ChangeEvent } from 'react';
 import type { Project, Card } from '../state/types';
 import type { StoreAction } from '../state/store';
-import { getCard, cardsByStage } from '../state/selectors';
+import { getCard, cardsByStage, getContextCardsForStage } from '../state/selectors';
 import { STAGES, FIRST_STAGE_ID } from '../state/stages';
 import { downloadJson } from '../utils/download';
 import { newId } from '../utils/id';
@@ -138,15 +138,11 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         setAutoGenProgress(`${i + 1} / ${STAGES.length}: ${stage.label}${stage.usesWebSearch ? ' (🌐 поиск)' : ''}`);
         dispatch({ type: 'SET_ACTIVE_STAGE', payload: { stageId: stage.id } });
 
-        const prevIds = STAGES.filter(s => s.order < stage.order).map(s => s.id);
-        // Context: all cards from prev stages — но ✗ Отклонённые ИСКЛЮЧАЕМ
-        // (пользователь явно сказал что они не нужны в контексте)
-        const contextCards = [
-          ...baseProject.cards.filter(c => prevIds.includes(c.stageId)),
-          ...generatedCards.filter(c => prevIds.includes(c.stageId)),
-        ]
-          .filter((c, idx, arr) => arr.findIndex(x => x.id === c.id) === idx)
-          .filter(c => c.status !== 'discarded');
+        // Контекст с применением правил:
+        // - только предыдущие по order
+        // - без ✗ Отклонённых
+        // - без целых модулей которые не нужны late-stage (см. selectors.ts)
+        const contextCards = getContextCardsForStage(baseProject, stage.id, generatedCards);
 
         let maxNum = 0;
         const onCard = (gen: any) => {

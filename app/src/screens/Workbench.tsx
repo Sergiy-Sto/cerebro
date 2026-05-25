@@ -339,7 +339,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
                     onClick={handleResetAndRegenerate}
                     disabled={!hasApiKey}
                     title={`Удалить все ${project.cards.length} карточки и сгенерировать заново с нуля. Действие необратимо.`}
-                    className="px-2 py-1.5 text-xs border border-red-300 text-red-600 bg-white hover:bg-red-50"
+                    className="px-2 py-1.5 text-xs border border-gray-300 text-gray-500 bg-white hover:bg-gray-50 hover:text-gray-700"
                   >
                     🗑 Очистить и заново
                   </button>

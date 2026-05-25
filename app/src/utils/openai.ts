@@ -150,7 +150,8 @@ export async function generateCardsStream(
     if (card) { onCard(card); contentBuffer = ''; }
   }
 
-  while (true) {
+  let streamDone = false;
+  while (!streamDone) {
     const { done, value } = await reader.read();
     if (done) break;
 
@@ -161,7 +162,7 @@ export async function generateCardsStream(
     for (const sseLine of sseLines) {
       if (!sseLine.startsWith('data: ')) continue;
       const data = sseLine.slice(6).trim();
-      if (data === '[DONE]') { flushAll(); return; }
+      if (data === '[DONE]') { flushAll(); streamDone = true; break; }
 
       try {
         const chunk = JSON.parse(data) as {

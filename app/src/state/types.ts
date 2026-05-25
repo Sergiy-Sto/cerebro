@@ -9,8 +9,9 @@ export type StageId =
   | 'failure_modes'
   | 'substitutes'
   | 'boundary_cases'
-  // — Module 02: Feature Challenge —
-  | 'feature_challenge'
+  // — Module 02: Feature Challenge (2 sub-modules) —
+  | 'feature_challenge'        // 2.1 — атака случайных признаков (variants)
+  | 'obligatory_reframing'     // 2.2 — радикальное переопределение через обязательные признаки
   // — Module 03+: остальные (переработаются позже) —
   | 'friction' | 'contradiction'
   | 'cross_field' | 'opportunity' | 'hypothesis' | 'critic'
@@ -20,7 +21,7 @@ export type CardType =
   | 'observation_item' | 'search_finding'
   | 'dimension' | 'obligatory_feature' | 'accidental_feature'
   | 'job' | 'actor' | 'failure_mode' | 'substitute' | 'boundary_case'
-  | 'transformation_handle'
+  | 'transformation_handle' | 'radical_reframe'
   | 'friction_point' | 'contradiction' | 'cross_field_analogy'
   | 'opportunity_branch' | 'hypothesis' | 'critique' | 'validation_test';
 

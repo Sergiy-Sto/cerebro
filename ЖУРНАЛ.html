@@ -403,6 +403,21 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-26 · Module 02 split</div>
+      <div class="decision-title">🔀 Module 02 разделён на 2.1 Variants + 2.2 Radical Reframing</div>
+      <div class="decision-why">
+        <strong>Проблема:</strong> 2.1 Feature Challenge атаковал ТОЛЬКО accidental признаки. Это типичный ТРИЗ-подход — даёт варианты сущности. Но **самые прорывные инновации именно ломают obligatory признаки**: iPad сломал клавиатуру, Tesla — двигатель, Uber — владение машиной, Airbnb — гостиницу как сущность, Spotify — носитель музыки. Граница obligatory/accidental субъективная, что сегодня кажется фундаментальным — завтра историческая случайность.<br>
+        <strong>Решение:</strong> два разных режима мышления = два отдельных под-модуля.
+        <ul>
+          <li><strong>2.1 Feature Challenge (Variants)</strong> — работа с accidental. Цель: варианты сущности в той же категории. ~6-10 карточек, тип <code>transformation_handle</code>. Title: "Variant: ..."</li>
+          <li><strong>2.2 Obligatory Reframing (Radical)</strong> — работа с obligatory. Цель: категориально новые сущности через JTBD. ~4-6 карточек, новый тип <code>radical_reframe</code>. Title: "Reframe: &lt;от&gt; → &lt;к&gt;"</li>
+        </ul>
+        <strong>Mosты в графе:</strong> 1.4 → 2.1 (для variants), 1.4 + 1.5 (JTBD) → 2.2 (для reframe-ов). В 4.1 Hypothesis оба используются как сырьё. Все этапы Module 03+ сдвинулись на +1 по order.<br>
+        <strong>Промпт 2.2 содержит примеры:</strong> iPad / Tesla / Uber / Airbnb / Spotify / Netflix — чтобы модель понимала уровень радикальности и не путала reframe с обычной трансформацией ("стол на одной ножке" = всё ещё стол = это 2.1, а не 2.2).
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-25 · cost log</div>
       <div class="decision-title">💰 Cost log реализован — детальный учёт каждого API-вызова</div>
       <div class="decision-why">

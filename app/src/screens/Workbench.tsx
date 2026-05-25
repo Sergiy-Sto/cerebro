@@ -292,21 +292,40 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             <option value="gpt-5.4-mini">gpt-5.4-mini</option>
             <option value="gpt-4.1">gpt-4.1 (legacy)</option>
           </select>
-          {!isAutoGenerating ? (
-            <button
-              onClick={handleAutoGenerateAll}
-              disabled={!hasApiKey}
-              title={!hasApiKey ? 'Сначала введите API ключ' : 'Сгенерировать все этапы по цепочке'}
-              className={[
-                'px-2.5 py-1.5 text-xs border',
-                !hasApiKey
-                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                  : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
-              ].join(' ')}
-            >
-              {project.cards.length === 0 ? '🚀 Запустить всё' : '🔄 Перегенерировать'}
-            </button>
-          ) : (
+          {!isAutoGenerating ? (() => {
+            const filledStages = STAGES.filter(s => cardsByStage(project, s.id).length > 0).length;
+            const allFilled = filledStages === STAGES.length;
+            const noneFilled = filledStages === 0;
+
+            let label: string;
+            let tooltip: string;
+            if (noneFilled) {
+              label = '🚀 Запустить всё';
+              tooltip = 'Сгенерировать все этапы по цепочке';
+            } else if (allFilled) {
+              label = '🔄 Перегенерировать всё';
+              tooltip = 'Все этапы заполнены — будет подтверждение перед очисткой и пересборкой';
+            } else {
+              label = '▶ Продолжить генерацию';
+              tooltip = `Заполнено ${filledStages}/${STAGES.length} этапов. Auto-all пропустит готовые и сгенерирует только пустые. Данные не пострадают.`;
+            }
+
+            return (
+              <button
+                onClick={handleAutoGenerateAll}
+                disabled={!hasApiKey}
+                title={!hasApiKey ? 'Сначала введите API ключ' : tooltip}
+                className={[
+                  'px-2.5 py-1.5 text-xs border',
+                  !hasApiKey
+                    ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                    : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
+                ].join(' ')}
+              >
+                {label}
+              </button>
+            );
+          })() : (
             <div className="flex gap-1 items-center">
               <span className="text-xs text-gray-500 max-w-[260px] truncate" title={autoGenProgress}>
                 {isPaused ? `⏸ ${autoGenProgress}` : `⏳ ${autoGenProgress}`}

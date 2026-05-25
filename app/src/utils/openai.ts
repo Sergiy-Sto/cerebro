@@ -197,9 +197,10 @@ export async function generateCardsStream(
   flushAll();
 
   // Fallback: если OpenAI не отдала usage — оцениваем по длине (1 token ≈ 4 chars).
-  // Не идеально точно (для не-English chars соотношение хуже), но лучше нуля.
-  if (usagePromptTokens === 0) usagePromptTokens = Math.ceil(prompt.length / 4);
-  if (usageCompletionTokens === 0) usageCompletionTokens = Math.ceil(totalContentChars / 4);
+  // Не идеально точно. Для русского текста ~2.5 chars/token, для English ~4, JSON ~3.
+  // Берём 2.5 как взвешенное среднее для нашего русско-доминантного контента.
+  if (usagePromptTokens === 0) usagePromptTokens = Math.ceil(prompt.length / 2.5);
+  if (usageCompletionTokens === 0) usageCompletionTokens = Math.ceil(totalContentChars / 2.5);
 
   // Лог пишем ВСЕГДА если есть logContext (раньше пропускали при 0 — теряли вызовы)
   if (logContext) {
@@ -373,8 +374,8 @@ export async function generateWithSearchStream(
             usageOutput = event.response.usage.output_tokens ?? 0;
           }
           // Fallback оценка если usage не пришёл
-          if (usageInput === 0) usageInput = Math.ceil(prompt.length / 4);
-          if (usageOutput === 0) usageOutput = Math.ceil(totalDeltaChars / 4);
+          if (usageInput === 0) usageInput = Math.ceil(prompt.length / 2.5);
+          if (usageOutput === 0) usageOutput = Math.ceil(totalDeltaChars / 2.5);
           onProgress?.({ phase: 'done', queriesCount: searchCount });
           if (logContext) {
             appendCostEntry({
@@ -550,9 +551,9 @@ export async function askQuestionStream(
   // Fallback если usage не пришёл
   if (usageIn === 0) {
     const promptLen = messages.reduce((s, m) => s + m.content.length, 0);
-    usageIn = Math.ceil(promptLen / 4);
+    usageIn = Math.ceil(promptLen / 2.5);
   }
-  if (usageOut === 0) usageOut = Math.ceil(fullAnswer.length / 4);
+  if (usageOut === 0) usageOut = Math.ceil(fullAnswer.length / 2.5);
 
   if (logContext) {
     appendCostEntry({

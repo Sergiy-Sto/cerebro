@@ -107,17 +107,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     if (!apiKey) { setShowApiKeyModal(true); return; }
 
     // Snapshot project state NOW (avoid stale ref issues inside async loop)
-    let baseProject = projectRef.current;
-
-    const allFilled = STAGES.every(s => cardsByStage(baseProject, s.id).length > 0);
-    if (allFilled) {
-      const ok = window.confirm(
-        'Все этапы уже заполнены.\nОчистить все карточки и сгенерировать заново?'
-      );
-      if (!ok) return;
-      baseProject = { ...baseProject, cards: [], selectedCardId: null, updatedAt: new Date().toISOString() };
-      dispatch({ type: 'UPDATE_PROJECT', payload: baseProject });
-    }
+    const baseProject = projectRef.current;
 
     setIsAutoGenerating(true);
     setIsPaused(false);
@@ -223,6 +213,22 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     setIsPaused((p) => !p);
   }
 
+  function handleResetAndRegenerate() {
+    const total = project.cards.length;
+    const cost = '~$1.50-2.50'; // приблизительная оценка полного auto-all
+    const ok = window.confirm(
+      `⚠️ Очистить ${total} карточек и сгенерировать ВСЁ заново с нуля?\n\n` +
+      `Стоимость полного прогона: ${cost} (зависит от моделей и web search).\n\n` +
+      `Действие необратимо. Текущие карточки будут безвозвратно удалены.`
+    );
+    if (!ok) return;
+
+    const cleared = { ...projectRef.current, cards: [], selectedCardId: null, updatedAt: new Date().toISOString() };
+    dispatch({ type: 'UPDATE_PROJECT', payload: cleared });
+    // Чуть подождать чтобы dispatch применился, потом запустить
+    setTimeout(() => handleAutoGenerateAll(), 100);
+  }
+
   function handleStop() {
     stopRef.current = true;
     setIsPaused(false);
@@ -296,34 +302,49 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             const filledStages = STAGES.filter(s => cardsByStage(project, s.id).length > 0).length;
             const allFilled = filledStages === STAGES.length;
             const noneFilled = filledStages === 0;
+            const hasAnyCards = filledStages > 0;
 
             let label: string;
             let tooltip: string;
+            let mainDisabled = false;
             if (noneFilled) {
               label = '🚀 Запустить всё';
               tooltip = 'Сгенерировать все этапы по цепочке';
             } else if (allFilled) {
-              label = '🔄 Перегенерировать всё';
-              tooltip = 'Все этапы заполнены — будет подтверждение перед очисткой и пересборкой';
+              label = '✓ Все этапы готовы';
+              tooltip = 'Все 18 этапов заполнены. Для пересборки используй красную кнопку «Очистить и заново».';
+              mainDisabled = true;
             } else {
               label = '▶ Продолжить генерацию';
-              tooltip = `Заполнено ${filledStages}/${STAGES.length} этапов. Auto-all пропустит готовые и сгенерирует только пустые. Данные не пострадают.`;
+              tooltip = `Заполнено ${filledStages}/${STAGES.length} этапов. Auto-all пропустит готовые, сгенерирует только пустые. Данные не пострадают.`;
             }
 
             return (
-              <button
-                onClick={handleAutoGenerateAll}
-                disabled={!hasApiKey}
-                title={!hasApiKey ? 'Сначала введите API ключ' : tooltip}
-                className={[
-                  'px-2.5 py-1.5 text-xs border',
-                  !hasApiKey
-                    ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-                    : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
-                ].join(' ')}
-              >
-                {label}
-              </button>
+              <>
+                <button
+                  onClick={handleAutoGenerateAll}
+                  disabled={!hasApiKey || mainDisabled}
+                  title={!hasApiKey ? 'Сначала введите API ключ' : tooltip}
+                  className={[
+                    'px-2.5 py-1.5 text-xs border',
+                    !hasApiKey || mainDisabled
+                      ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                      : 'border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100',
+                  ].join(' ')}
+                >
+                  {label}
+                </button>
+                {hasAnyCards && (
+                  <button
+                    onClick={handleResetAndRegenerate}
+                    disabled={!hasApiKey}
+                    title={`Удалить все ${project.cards.length} карточки и сгенерировать заново с нуля. Действие необратимо.`}
+                    className="px-2 py-1.5 text-xs border border-red-300 text-red-600 bg-white hover:bg-red-50"
+                  >
+                    🗑 Очистить и заново
+                  </button>
+                )}
+              </>
             );
           })() : (
             <div className="flex gap-1 items-center">

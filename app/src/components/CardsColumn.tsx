@@ -73,7 +73,8 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
     try {
       const prevStageIds = STAGES.filter((s) => s.order < stageConfig.order).map((s) => s.id);
-      const contextCards = project.cards.filter((c) => prevStageIds.includes(c.stageId));
+      // ✗ Отклонённые карточки не передаём в контекст — пользователь явно их выкинул
+      const contextCards = project.cards.filter((c) => prevStageIds.includes(c.stageId) && c.status !== 'discarded');
       const existingCards = isThinkMore ? cards : [];
 
       const stageCards = cardsByStage(project, project.activeStageId);

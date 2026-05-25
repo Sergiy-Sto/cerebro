@@ -47,15 +47,10 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   }, [project.id]);
 
   // Auto-start on new empty projects
-  const autoStarted = useRef(false);
-  useEffect(() => {
-    if (autoStarted.current) return;
-    if (project.cards.length === 0 && getApiKey()) {
-      autoStarted.current = true;
-      handleAutoGenerateAll();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Auto-start ОТКЛЮЧЁН (2026-05-26):
+  // Раньше на новых пустых проектах автоматически запускался handleAutoGenerateAll.
+  // Теперь пользователь сам жмёт "🚀 Запустить всё" когда готов.
+  // Это даёт контроль над тратами и не запускает дорогую цепочку случайно.
 
   const selectedCard = project.selectedCardId
     ? getCard(project, project.selectedCardId)
@@ -144,11 +139,14 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         dispatch({ type: 'SET_ACTIVE_STAGE', payload: { stageId: stage.id } });
 
         const prevIds = STAGES.filter(s => s.order < stage.order).map(s => s.id);
-        // Context: all cards from prev stages in snapshot + everything generated this run
+        // Context: all cards from prev stages — но ✗ Отклонённые ИСКЛЮЧАЕМ
+        // (пользователь явно сказал что они не нужны в контексте)
         const contextCards = [
           ...baseProject.cards.filter(c => prevIds.includes(c.stageId)),
           ...generatedCards.filter(c => prevIds.includes(c.stageId)),
-        ].filter((c, idx, arr) => arr.findIndex(x => x.id === c.id) === idx);
+        ]
+          .filter((c, idx, arr) => arr.findIndex(x => x.id === c.id) === idx)
+          .filter(c => c.status !== 'discarded');
 
         let maxNum = 0;
         const onCard = (gen: any) => {

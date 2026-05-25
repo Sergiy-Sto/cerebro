@@ -134,6 +134,7 @@ export async function generateCardsStream(
   const decoder = new TextDecoder();
   let sseBuffer = '';
   let contentBuffer = '';
+  let totalContentChars = 0; // вся длина пришедшего content для fallback оценки tokens
 
   function flushLines() {
     const lines = contentBuffer.split('\n');
@@ -172,6 +173,7 @@ export async function generateCardsStream(
         const delta = chunk.choices?.[0]?.delta?.content ?? '';
         if (delta) {
           contentBuffer += delta;
+          totalContentChars += delta.length;
           flushLines();
         }
         // Usage приходит в финальном chunk когда stream_options.include_usage=true
@@ -185,8 +187,13 @@ export async function generateCardsStream(
 
   flushAll();
 
-  // Лог в cost log
-  if (logContext && (usagePromptTokens > 0 || usageCompletionTokens > 0)) {
+  // Fallback: если OpenAI не отдала usage — оцениваем по длине (1 token ≈ 4 chars).
+  // Не идеально точно (для не-English chars соотношение хуже), но лучше нуля.
+  if (usagePromptTokens === 0) usagePromptTokens = Math.ceil(prompt.length / 4);
+  if (usageCompletionTokens === 0) usageCompletionTokens = Math.ceil(totalContentChars / 4);
+
+  // Лог пишем ВСЕГДА если есть logContext (раньше пропускали при 0 — теряли вызовы)
+  if (logContext) {
     appendCostEntry({
       ...logContext,
       model,
@@ -232,6 +239,7 @@ export async function generateWithSearchStream(
   const prompt = buildPrompt(stageId, project, contextCards, existingCards);
   let usageInput = 0;
   let usageOutput = 0;
+  let totalDeltaChars = 0;
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -317,6 +325,7 @@ export async function generateWithSearchStream(
         // Текстовая дельта — основной выход модели
         if (event.type === 'response.output_text.delta' && typeof event.delta === 'string') {
           contentBuffer += event.delta;
+          totalDeltaChars += event.delta.length;
           flushLines();
         }
 
@@ -345,6 +354,9 @@ export async function generateWithSearchStream(
             usageInput = event.response.usage.input_tokens ?? 0;
             usageOutput = event.response.usage.output_tokens ?? 0;
           }
+          // Fallback оценка если usage не пришёл
+          if (usageInput === 0) usageInput = Math.ceil(prompt.length / 4);
+          if (usageOutput === 0) usageOutput = Math.ceil(totalDeltaChars / 4);
           onProgress?.({ phase: 'done', queriesCount: searchCount });
           if (logContext) {
             appendCostEntry({
@@ -363,6 +375,8 @@ export async function generateWithSearchStream(
 
   flushAll();
   onProgress?.({ phase: 'done', queriesCount: searchCount });
+  if (usageInput === 0) usageInput = Math.ceil(prompt.length / 4);
+  if (usageOutput === 0) usageOutput = Math.ceil(totalDeltaChars / 4);
   if (logContext) {
     appendCostEntry({
       ...logContext,

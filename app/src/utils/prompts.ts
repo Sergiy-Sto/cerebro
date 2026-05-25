@@ -1,3 +1,19 @@
+/**
+ * Промпты для всех этапов методологии Cerebro.
+ *
+ * 📜 История эволюции промптов — в `prompts.history.md` рядом с этим файлом.
+ *    Там видно как менялись формулировки и почему. Полезно когда хочешь понять
+ *    "а зачем мы сейчас так пишем" или собираешься внести новые изменения.
+ *
+ * 🎯 Принципы текущих промптов (саммари — детально см. prompts.history.md):
+ *    - System prompt задаёт роль "продакт объясняет коллеге за кофе"
+ *    - Module 01-03 — рабочие термины с раскрытием в скобках
+ *    - Module 04 — жёсткий plain mode (без жаргона в title и формулировке)
+ *    - Plain Context Compression — Step 0 в 4.1 перед генерацией
+ *    - Internal vs Output — думать сложно, выдавать просто
+ *    - Commercial signal lens на 5 этапах
+ *    - Lineage 🔥 через граф derivedFromIds
+ */
 import type { StageId, Project, Card } from '../state/types';
 
 function formatContext(project: Project): string {

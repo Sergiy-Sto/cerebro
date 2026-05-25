@@ -1,7 +1,7 @@
 import { useState, type Dispatch } from 'react';
 import type { Card, Project } from '../state/types';
 import { STAGES } from '../state/stages';
-import { getCard, cardsByStage } from '../state/selectors';
+import { getCard, cardsByStage, cardLineage } from '../state/selectors';
 import type { StoreAction } from '../state/store';
 import CardForm from './CardForm';
 import CardDescription from './CardDescription';
@@ -85,13 +85,21 @@ export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' 
         <h2 className="text-lg font-semibold text-gray-900 mb-1">{card.title}</h2>
 
         {/* Meta */}
-        <div className="flex gap-2 flex-wrap text-xs text-gray-400 mb-2">
+        <div className="flex gap-2 flex-wrap items-center text-xs text-gray-400 mb-2">
           <span>{card.type.replace(/_/g, ' ')}</span>
           <span>·</span>
           <span>{stageConfig.label}</span>
           <span>·</span>
           <span>#{card.number}</span>
           {card.model && <><span>·</span><span className="text-violet-400 font-mono">{card.model}</span></>}
+          {cardLineage(project, card).hasRadicalAncestor && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 border border-purple-300 text-purple-700 text-[10px] font-medium uppercase tracking-wide"
+              title="В цепочке предков (через derivedFromIds) есть карточка из 2.2 Obligatory Reframing. Эта идея построена на радикальном переопределении сущности, а не на улучшении существующего."
+            >
+              🔥 Radical lineage
+            </span>
+          )}
         </div>
 
         {/* Parent link */}

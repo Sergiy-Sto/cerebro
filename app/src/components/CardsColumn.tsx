@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type Dispatch } from 'react';
 import type { Project } from '../state/types';
 import { STAGES } from '../state/stages';
-import { cardsByStage, statsForStage, getCard } from '../state/selectors';
+import { cardsByStage, statsForStage, getCard, cardLineage } from '../state/selectors';
 import type { StoreAction } from '../state/store';
 import { getApiKey, generateCardsStream, generateWithSearchStream, type SearchProgress } from '../utils/openai';
 import { newId } from '../utils/id';
@@ -216,6 +216,12 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
                       {card.model && <span className="text-xs text-violet-400 font-mono">{card.model}</span>}
                       {card.sources && card.sources.length > 0 && (
                         <span className="text-xs text-cyan-600">🌐 {card.sources.length}</span>
+                      )}
+                      {cardLineage(project, card).hasRadicalAncestor && (
+                        <span
+                          className="text-xs text-purple-700 font-medium"
+                          title="Радикальное происхождение: в цепочке предков есть карточка из 2.2 Obligatory Reframing"
+                        >🔥</span>
                       )}
                     </div>
                     {card.parentId && (

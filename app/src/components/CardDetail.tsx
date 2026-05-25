@@ -5,18 +5,21 @@ import { getCard, cardsByStage } from '../state/selectors';
 import type { StoreAction } from '../state/store';
 import CardForm from './CardForm';
 import CardDescription from './CardDescription';
+import CardChatModal from './CardChatModal';
 import ConfirmDialog from './ConfirmDialog';
 
 interface CardDetailProps {
   card: Card | null;
   project: Project;
   dispatch: Dispatch<StoreAction>;
+  model?: string;
 }
 
-export default function CardDetail({ card, project, dispatch }: CardDetailProps) {
+export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' }: CardDetailProps) {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showChildForm, setShowChildForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   if (!card) {
     return (
@@ -196,6 +199,19 @@ export default function CardDetail({ card, project, dispatch }: CardDetailProps)
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2">
           <button
+            onClick={() => setShowChat(true)}
+            className="px-3 py-1.5 text-xs border border-blue-400 text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium"
+            title="Задать вопрос модели об этой карточке. Модель знает контекст + родителей."
+          >
+            💬 Спросить
+            {card.discussions && card.discussions.length > 0 && (
+              <span className="ml-1.5 inline-block bg-blue-200 text-blue-800 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                {card.discussions.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={handleToggleInteresting}
             className={[
               'px-3 py-1.5 text-xs border',
@@ -292,6 +308,16 @@ export default function CardDetail({ card, project, dispatch }: CardDetailProps)
           message={`Удалить карточку «${card.title}»? Действие необратимо.`}
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      {showChat && (
+        <CardChatModal
+          card={card}
+          project={project}
+          model={model}
+          dispatch={dispatch}
+          onClose={() => setShowChat(false)}
         />
       )}
     </div>

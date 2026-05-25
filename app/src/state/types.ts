@@ -53,6 +53,16 @@ export interface CardSource {
   url: string;
 }
 
+/** Один обмен Q&A в чате о карточке. */
+export interface CardDiscussion {
+  q: string;
+  a: string;
+  timestamp: string;       // ISO
+  model?: string;          // какая модель отвечала
+  tokensIn?: number;
+  tokensOut?: number;
+}
+
 export interface Card {
   id: string;
   number: number;
@@ -71,6 +81,7 @@ export interface Card {
   notes?: string;
   derivedFromIds?: string[];
   sources?: CardSource[];  // для карточек Search Scan — список найденных источников
+  discussions?: CardDiscussion[];  // история вопросов-ответов пользователя по этой карточке
 }
 
 export interface Project {

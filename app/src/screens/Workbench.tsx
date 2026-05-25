@@ -427,7 +427,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           autoGenerating={isAutoGenerating}
           model={selectedModel}
         />
-        <CardDetail card={selectedCard} project={project} dispatch={dispatch} />
+        <CardDetail card={selectedCard} project={project} dispatch={dispatch} model={selectedModel} />
       </div>
 
       {showEditProject && (

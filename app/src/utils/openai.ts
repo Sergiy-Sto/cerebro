@@ -388,3 +388,164 @@ export async function generateWithSearchStream(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Card Q&A — обычный chat с моделью о конкретной карточке
+// Используется в кнопке "💬 Задать вопрос" на карточке
+// ─────────────────────────────────────────────────────────────────────
+
+export interface CardChatContext {
+  card: Card;
+  /** Родительские карточки (через derivedFromIds) — для глубины контекста. */
+  ancestorCards: Card[];
+  /** Текущая стадия и тема проекта — чтобы модель помнила контекст методологии. */
+  projectFrame: string;
+  stageLabel: string;
+  /** Предыдущие вопросы-ответы по этой карточке (если есть). */
+  history?: Array<{ q: string; a: string }>;
+}
+
+function buildCardChatMessages(ctx: CardChatContext, newQuestion: string): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+  const { card, ancestorCards, projectFrame, stageLabel, history = [] } = ctx;
+
+  const systemPrompt = `Ты — аналитик и со-автор бизнес-методологии Creative Core Workbench.
+Пользователь работает над темой "${projectFrame}" и сейчас читает одну из карточек на этапе "${stageLabel}".
+Он задаёт уточняющий вопрос о содержании этой карточки.
+
+Твоя задача:
+- Ответить кратко и по делу (3-7 предложений или короткий список).
+- Простым человеческим языком. Если в карточке был жаргон или термин — раскрой его в скобках.
+- Связь с контекстом методологии важна: если вопрос требует — упомяни связанные родительские карточки или сосседние понятия.
+- Если ты не знаешь точного ответа — честно скажи: "точно не знаю, стоит проверить поиском".
+- НЕ генерируй новые карточки. НЕ предлагай гипотезы. Просто отвечай на вопрос.
+- Язык — русский. Markdown-форматирование (списки, **bold**) разрешается, рендеринг это поддерживает.`;
+
+  const ancestorsBlock = ancestorCards.length > 0
+    ? `\n\n--- Родительские карточки (контекст из предыдущих этапов) ---\n` +
+      ancestorCards.map((c) => `[${c.id}] ${c.title}\n${c.description}`).join('\n\n')
+    : '';
+
+  const cardBlock = `--- Карточка о которой вопрос ---
+Заголовок: ${card.title}
+
+Описание:
+${card.description}
+
+${card.tags.length > 0 ? `Теги: ${card.tags.join(', ')}` : ''}
+${card.metrics ? `Метрики: Новизна ${card.metrics.novelty}/10 · Сила ${card.metrics.strength}/10 · Реализация ${card.metrics.feasibility}/10 · Проверяемость ${card.metrics.testability}/10` : ''}
+${card.analysis ? `Анализ метрик: ${card.analysis}` : ''}
+${card.sources && card.sources.length > 0 ? `Источники: ${card.sources.map((s) => s.url).join(', ')}` : ''}${ancestorsBlock}`;
+
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: cardBlock },
+  ];
+
+  // Добавляем историю Q&A если есть
+  for (const turn of history) {
+    messages.push({ role: 'user', content: turn.q });
+    messages.push({ role: 'assistant', content: turn.a });
+  }
+
+  // Новый вопрос
+  messages.push({ role: 'user', content: newQuestion });
+
+  return messages;
+}
+
+/**
+ * Streaming Q&A о карточке.
+ * onDelta — частичные текстовые дельты ответа (для живого вывода в UI).
+ * Резолвится финальным { fullAnswer, tokensIn, tokensOut }.
+ */
+export async function askQuestionStream(
+  ctx: CardChatContext,
+  newQuestion: string,
+  apiKey: string,
+  onDelta: (chunk: string) => void,
+  model = 'gpt-5.5',
+  logContext?: LogContext,
+  signal?: AbortSignal
+): Promise<{ fullAnswer: string; tokensIn: number; tokensOut: number }> {
+  const messages = buildCardChatMessages(ctx, newQuestion);
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    signal,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: true,
+      stream_options: { include_usage: true },
+      ...(isReasoningModel(model) ? { max_completion_tokens: 4000 } : {}),
+      ...(supportsCustomTemperature(model) ? { temperature: 0.5 } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err?.error?.message ?? `OpenAI error ${response.status}`);
+  }
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = '';
+  let fullAnswer = '';
+  let usageIn = 0;
+  let usageOut = 0;
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    sseBuffer += decoder.decode(value, { stream: true });
+    const sseLines = sseBuffer.split('\n');
+    sseBuffer = sseLines.pop() ?? '';
+
+    for (const sseLine of sseLines) {
+      if (!sseLine.startsWith('data: ')) continue;
+      const data = sseLine.slice(6).trim();
+      if (data === '[DONE]') { streamDone = true; break; }
+
+      try {
+        const chunk = JSON.parse(data) as {
+          choices?: Array<{ delta?: { content?: string } }>;
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
+        const delta = chunk.choices?.[0]?.delta?.content ?? '';
+        if (delta) {
+          fullAnswer += delta;
+          onDelta(delta);
+        }
+        if (chunk.usage) {
+          usageIn = chunk.usage.prompt_tokens ?? 0;
+          usageOut = chunk.usage.completion_tokens ?? 0;
+        }
+      } catch { /* malformed SSE chunk */ }
+    }
+  }
+
+  // Fallback если usage не пришёл
+  if (usageIn === 0) {
+    const promptLen = messages.reduce((s, m) => s + m.content.length, 0);
+    usageIn = Math.ceil(promptLen / 4);
+  }
+  if (usageOut === 0) usageOut = Math.ceil(fullAnswer.length / 4);
+
+  if (logContext) {
+    appendCostEntry({
+      ...logContext,
+      stageLabel: `${logContext.stageLabel} (вопрос к карточке)`,
+      model,
+      inputTokens: usageIn,
+      outputTokens: usageOut,
+    });
+  }
+
+  return { fullAnswer, tokensIn: usageIn, tokensOut: usageOut };
+}
+

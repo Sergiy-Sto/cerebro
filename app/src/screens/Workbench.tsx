@@ -233,7 +233,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     stopRef.current = true;
     setIsPaused(false);
     pauseRef.current = false;
-    setAutoGenProgress('🛑 Остановка...');
+    setAutoGenProgress('Остановка...');
     // Мгновенно прерываем текущий fetch — не ждём конца стейджа
     autoAllAbortRef.current?.abort();
   }
@@ -368,7 +368,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
                 title="Остановить генерацию полностью"
                 className="px-2.5 py-1.5 text-xs border border-red-400 text-red-700 bg-red-50 hover:bg-red-100 font-medium"
               >
-                🛑 Стоп
+                Стоп
               </button>
             </div>
           )}

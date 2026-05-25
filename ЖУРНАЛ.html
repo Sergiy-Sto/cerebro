@@ -414,6 +414,24 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">приоритет: ближайший · 2026-05-25 (после анализа Cost log)</div>
+      <div class="decision-title">🧠 Умный фильтр контекста — что нужно тащить за собой, а что не нужно</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Сейчас каждый под-модуль получает в контексте ВСЕ карточки всех предыдущих стейджей. К концу цепочки (Hypothesis, Critic, Validation) это 100+ карточек ~30-40K input tokens только на контекст.<br>
+        <strong>Гипотеза:</strong> поздние стадии могут не нуждаться в ранних карточках напрямую. Например Hypothesis Generation работает на основе Opportunity Tree + Feature Challenge — а Observation Scan и Fundamental Dimensions уже отработали через цепочку производных.<br>
+        <strong>Идеи фильтрации:</strong>
+        <ul>
+          <li><strong>★-only для дальних предков</strong> — карточки на 3+ шага назад передавать только если ★ marked, иначе только title</li>
+          <li><strong>Зависимость по модулям</strong> — Module 04 Synthesis получает только Module 02-03, не Module 01 целиком</li>
+          <li><strong>Граф derivedFromIds</strong> — для нового запроса передавать только карточки которые прямо или транзитивно связаны через derived_from с текущей задачей</li>
+          <li><strong>Summary вместо полных карточек</strong> — на каждом этапе модель делает короткий summary всего модуля, summary тащится дальше вместо отдельных карточек</li>
+        </ul>
+        <strong>Когда:</strong> после первого анализа Cost log breakdown. Если Hypothesis/Critic/Validation реально оказываются топ-расходом — реализуем фильтрацию. Если основные деньги уходят в Module 01 (особенно Search Scan) — фокус другой.<br>
+        <strong>Риск:</strong> можем потерять связность методологии если переборщить. Нужно тестировать.
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">приоритет: ближайший · 2026-05-25</div>
       <div class="decision-title">💰 Оптимизация стоимости API — главный рычаг: per-stage selector модели</div>
       <div class="decision-why">

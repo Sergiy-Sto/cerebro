@@ -19,7 +19,28 @@ export interface CostEntry {
   inputTokens: number;
   outputTokens: number;
   webSearchCalls: number;
-  cost: number;               // USD
+  /**
+   * Legacy: ранее сюда писали статичную оценку на момент записи.
+   * Больше не читаем — стоимость пересчитывается на лету через entryCost()
+   * чтобы изменения цен в pricing.ts автоматически отражались
+   * на исторических записях. Поле сохранено как optional для совместимости
+   * со старыми localStorage-данными (просто игнорируется).
+   */
+  cost?: number;
+}
+
+/**
+ * Динамический пересчёт стоимости одной записи лога по актуальному прайсу.
+ * Это единственный источник правды для отображения стоимости —
+ * `entry.cost` (если есть) игнорируется.
+ */
+export function entryCost(entry: CostEntry): number {
+  return estimateCost(
+    entry.model,
+    entry.inputTokens,
+    entry.outputTokens,
+    entry.webSearchCalls ?? 0
+  );
 }
 
 export interface CostLogInput {
@@ -43,7 +64,6 @@ export function loadCostLog(): CostEntry[] {
 }
 
 export function appendCostEntry(input: CostLogInput): CostEntry {
-  const cost = estimateCost(input.model, input.inputTokens, input.outputTokens, input.webSearchCalls ?? 0);
   const entry: CostEntry = {
     timestamp: new Date().toISOString(),
     projectId: input.projectId ?? null,
@@ -54,7 +74,7 @@ export function appendCostEntry(input: CostLogInput): CostEntry {
     inputTokens: input.inputTokens,
     outputTokens: input.outputTokens,
     webSearchCalls: input.webSearchCalls ?? 0,
-    cost,
+    // cost не записываем — теперь пересчитывается на лету через entryCost()
   };
 
   const log = loadCostLog();
@@ -81,11 +101,11 @@ export function totalCostToday(): number {
   todayStart.setHours(0, 0, 0, 0);
   return log
     .filter((e) => new Date(e.timestamp) >= todayStart)
-    .reduce((sum, e) => sum + e.cost, 0);
+    .reduce((sum, e) => sum + entryCost(e), 0);
 }
 
 export function totalCostAll(): number {
-  return loadCostLog().reduce((sum, e) => sum + e.cost, 0);
+  return loadCostLog().reduce((sum, e) => sum + entryCost(e), 0);
 }
 
 export interface CostBreakdown {
@@ -121,7 +141,7 @@ export function breakdown(
       outputTokens: 0,
       webSearchCalls: 0,
     };
-    cur.cost += e.cost;
+    cur.cost += entryCost(e);
     cur.calls += 1;
     cur.inputTokens += e.inputTokens;
     cur.outputTokens += e.outputTokens;

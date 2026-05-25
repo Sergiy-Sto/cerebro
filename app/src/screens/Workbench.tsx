@@ -31,6 +31,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
   // Refs для async-loop control (state не виден внутри уже-запущенной async function)
   const pauseRef = useRef(false);
   const stopRef = useRef(false);
+  const skipCurrentRef = useRef(false);
   const autoAllAbortRef = useRef<AbortController | null>(null);
   useEffect(() => { projectRef.current = project; }, [project]);
   useEffect(() => { pauseRef.current = isPaused; }, [isPaused]);
@@ -113,6 +114,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     setIsPaused(false);
     pauseRef.current = false;
     stopRef.current = false;
+    skipCurrentRef.current = false;
     setAutoGenError(null);
 
     // Local card accumulator — not affected by async React render timing
@@ -126,6 +128,9 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           await new Promise((r) => setTimeout(r, 250));
         }
         if (stopRef.current) break;
+
+        // Сбросим skip-флаг перед каждым стейджем (если предыдущий был skipped)
+        skipCurrentRef.current = false;
 
         const stage = STAGES[i];
 
@@ -170,41 +175,60 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           stageLabel: stage.label,
         };
 
-        // Создаём новый AbortController на каждый стейдж — Stop сразу прервёт текущий fetch
+        // Создаём новый AbortController на каждый стейдж — Stop / Skip сразу прервёт текущий fetch
         const controller = new AbortController();
         autoAllAbortRef.current = controller;
 
-        if (stage.usesWebSearch) {
-          await generateWithSearchStream(
-            stage.id, baseProject, apiKey, contextCards, [],
-            onCard,
-            (p) => {
-              if (p.phase === 'searching' && p.currentQuery) {
-                setAutoGenProgress(`${i + 1} / ${STAGES.length}: 🔍 ${p.queriesCount}/12 — "${p.currentQuery.slice(0, 50)}"`);
-              } else if (p.phase === 'writing') {
-                setAutoGenProgress(`${i + 1} / ${STAGES.length}: ✍ Синтезирую (${p.queriesCount} поисков)`);
-              }
-            },
-            selectedModel,
-            logContext,
-            controller.signal
-          );
-        } else {
-          await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel, logContext, controller.signal);
+        // Локальный try/catch на каждую итерацию — позволяет Skip продолжить с следующего стейджа
+        try {
+          if (stage.usesWebSearch) {
+            await generateWithSearchStream(
+              stage.id, baseProject, apiKey, contextCards, [],
+              onCard,
+              (p) => {
+                if (p.phase === 'searching' && p.currentQuery) {
+                  setAutoGenProgress(`${i + 1} / ${STAGES.length}: 🔍 ${p.queriesCount}/12 — "${p.currentQuery.slice(0, 50)}"`);
+                } else if (p.phase === 'writing') {
+                  setAutoGenProgress(`${i + 1} / ${STAGES.length}: ✍ Синтезирую (${p.queriesCount} поисков)`);
+                }
+              },
+              selectedModel,
+              logContext,
+              controller.signal
+            );
+          } else {
+            await generateCardsStream(stage.id, baseProject, apiKey, contextCards, [], onCard, selectedModel, logContext, controller.signal);
+          }
+        } catch (stageErr) {
+          const isAbort = (stageErr instanceof DOMException && stageErr.name === 'AbortError') ||
+                          (stageErr instanceof Error && stageErr.message.toLowerCase().includes('abort'));
+
+          if (skipCurrentRef.current) {
+            // Skip — переходим к следующему стейджу. Карточки которые успели сгенериться — остаются.
+            skipCurrentRef.current = false;
+            continue;
+          }
+          if (stopRef.current) {
+            // Stop — выход из всего цикла
+            break;
+          }
+          if (isAbort) {
+            // Abort без явного skip/stop флага — нестандартная ситуация, тоже продолжим
+            continue;
+          }
+          // Реальная ошибка — записываем и выходим из цикла
+          throw stageErr;
         }
       }
     } catch (err) {
-      // AbortError = пользователь нажал Stop — это не ошибка
-      const isAbort = (err instanceof DOMException && err.name === 'AbortError') ||
-                      (err instanceof Error && err.message.toLowerCase().includes('abort'));
-      if (!isAbort) {
-        setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
-      }
+      // Реальные ошибки (не abort)
+      setAutoGenError(err instanceof Error ? err.message : 'Ошибка генерации');
     } finally {
       setIsAutoGenerating(false);
       setIsPaused(false);
       pauseRef.current = false;
       stopRef.current = false;
+      skipCurrentRef.current = false;
       setAutoGenProgress('');
     }
   }
@@ -235,6 +259,13 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     pauseRef.current = false;
     setAutoGenProgress('Остановка...');
     // Мгновенно прерываем текущий fetch — не ждём конца стейджа
+    autoAllAbortRef.current?.abort();
+  }
+
+  function handleSkipCurrent() {
+    // Прервать только текущий стейдж — auto-all продолжится со следующего
+    skipCurrentRef.current = true;
+    setAutoGenProgress('Пропускаем стейдж...');
     autoAllAbortRef.current?.abort();
   }
 
@@ -362,6 +393,13 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
                 ].join(' ')}
               >
                 {isPaused ? '▶ Продолжить' : '⏸ Пауза'}
+              </button>
+              <button
+                onClick={handleSkipCurrent}
+                title="Пропустить текущий стейдж, перейти к следующему. Уже сгенерированные карточки остаются."
+                className="px-2.5 py-1.5 text-xs border border-orange-400 text-orange-700 bg-orange-50 hover:bg-orange-100 font-medium"
+              >
+                ⏭ Пропустить
               </button>
               <button
                 onClick={handleStop}

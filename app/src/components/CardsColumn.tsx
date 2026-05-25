@@ -13,9 +13,11 @@ interface CardsColumnProps {
   onOpenApiKey: () => void;
   autoGenerating?: boolean;
   model?: string;
+  /** Колбэк "пропустить текущий стейдж" в auto-all */
+  onSkipAutoAllStage?: () => void;
 }
 
-export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGenerating, model = 'gpt-5.5' }: CardsColumnProps) {
+export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGenerating, model = 'gpt-5.5', onSkipAutoAllStage }: CardsColumnProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -38,7 +40,13 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
     const key = `${project.id}:${project.activeStageId}`;
     if (cards.length === 0 && getApiKey() && !isGenerating && autoGenKey.current !== key) {
       autoGenKey.current = key;
-      handleGenerate();
+      // Защита от race condition: даём 300ms на случай если auto-all только-только стартовал
+      // и autoGenerating prop ещё не успел обновиться
+      const t = setTimeout(() => {
+        if (autoGenerating) return; // late check
+        handleGenerate();
+      }, 300);
+      return () => clearTimeout(t);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.id, project.activeStageId, cards.length, autoGenerating, project.cards.length]);
@@ -237,6 +245,17 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
 
       {/* Sticky bottom */}
       <div className="border-t border-gray-200 px-3 py-3 space-y-2">
+        {/* Кнопка "Пропустить" — только когда идёт auto-all (НЕ одиночная генерация) */}
+        {autoGenerating && onSkipAutoAllStage && (
+          <button
+            onClick={onSkipAutoAllStage}
+            title="Пропустить этот стейдж. Auto-all перейдёт к следующему. Уже сгенерированные карточки в этом стейдже остаются."
+            className="w-full px-2 py-1.5 text-xs font-medium border border-orange-400 text-orange-700 bg-orange-50 hover:bg-orange-100"
+          >
+            ⏭ Пропустить этот стейдж
+          </button>
+        )}
+
         {isGenerating ? (
           <div className="flex gap-2">
             <div className="flex-1 px-2 py-2 text-xs font-medium bg-violet-100 text-violet-600 text-center">

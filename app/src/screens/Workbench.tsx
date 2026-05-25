@@ -395,13 +395,6 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
                 {isPaused ? '▶ Продолжить' : '⏸ Пауза'}
               </button>
               <button
-                onClick={handleSkipCurrent}
-                title="Пропустить текущий стейдж, перейти к следующему. Уже сгенерированные карточки остаются."
-                className="px-2.5 py-1.5 text-xs border border-orange-400 text-orange-700 bg-orange-50 hover:bg-orange-100 font-medium"
-              >
-                ⏭ Пропустить
-              </button>
-              <button
                 onClick={handleStop}
                 title="Остановить генерацию полностью"
                 className="px-2.5 py-1.5 text-xs border border-red-400 text-red-700 bg-red-50 hover:bg-red-100 font-medium"
@@ -464,6 +457,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           onOpenApiKey={() => setShowApiKeyModal(true)}
           autoGenerating={isAutoGenerating}
           model={selectedModel}
+          onSkipAutoAllStage={handleSkipCurrent}
         />
         <CardDetail card={selectedCard} project={project} dispatch={dispatch} model={selectedModel} />
       </div>

@@ -403,6 +403,24 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-26 · 1.7 Failure Modes удалён</div>
+      <div class="decision-title">🪓 Убран этап 1.7 Failure Modes — дублировал 3.1 Friction Map</div>
+      <div class="decision-why">
+        <strong>Проблема:</strong> На реальном прогоне (Кофейня) пользователь увидел что 1.7 (28 карточек) и 3.1 (13 карточек) реально про одно и то же — "где болит". Оба описывали сбои с одинаковыми WHO/WHAT/WHY полями.<br>
+        <strong>Решение:</strong> Удалить 1.7 полностью. Анализ болей теперь только в 3.1 Friction Map (Module 03), где он получает полный контекст из Reality Mapping + Feature Challenge. Reality Mapping (Module 01) должен быть описательным ("что это"), а не аналитическим ("где это плохо работает") — failure-перспектива логически принадлежит Module 03.<br>
+        <strong>Технически:</strong>
+        <ul>
+          <li>Убраны 'failure_modes' из StageId и 'failure_mode' из CardType</li>
+          <li>Удалён промпт failure_modes из STAGE_PROMPTS</li>
+          <li>1.8 Substitutes → 1.7, 1.9 Boundary Cases → 1.8 (Module 01 теперь 8 под-модулей вместо 9)</li>
+          <li>Module 02-04 пересдвинуты по `order` (-1)</li>
+          <li>Миграция в store.ts: старые карточки stageId='failure_modes' → 'friction', type='failure_mode' → 'friction_point'. activeStageId='failure_modes' → 'friction'. Данные пользователя не теряются.</li>
+        </ul>
+        <strong>Бонус:</strong> минус один API вызов за прогон (~$0.30 экономии).
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-26 · Module 02 split</div>
       <div class="decision-title">🔀 Module 02 разделён на 2.1 Variants + 2.2 Radical Reframing</div>
       <div class="decision-why">

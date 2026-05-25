@@ -12,10 +12,44 @@ function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialState;
-    return JSON.parse(raw) as AppState;
+    const parsed = JSON.parse(raw) as AppState;
+    return migrate(parsed);
   } catch {
     return initialState;
   }
+}
+
+/**
+ * Миграции state при загрузке.
+ * Применяются однократно при чтении из localStorage.
+ */
+function migrate(state: AppState): AppState {
+  let mutated = false;
+  for (const project of state.projects) {
+    for (const card of project.cards) {
+      // 2026-05-26: 1.7 Failure Modes удалён — карточки переносятся в 3.1 Friction (Friction Map)
+      // (они концептуально дублировались)
+      if ((card.stageId as string) === 'failure_modes') {
+        (card as any).stageId = 'friction';
+        if ((card.type as string) === 'failure_mode') {
+          (card as any).type = 'friction_point';
+        }
+        mutated = true;
+      }
+    }
+    // Если активный стейдж был на failure_modes — переключаем на friction
+    if ((project.activeStageId as string) === 'failure_modes') {
+      (project as any).activeStageId = 'friction';
+      mutated = true;
+    }
+  }
+  if (mutated) {
+    // Сохраним мигрированный state обратно (в фоне)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* ignore */ }
+  }
+  return state;
 }
 
 function saveState(state: AppState): void {

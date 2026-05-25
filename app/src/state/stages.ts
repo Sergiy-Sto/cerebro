@@ -39,25 +39,24 @@ export const STAGES: StageConfig[] = [
   { id: 'obligatory_vs_accidental',label: '1.4 Obligatory vs Accidental', expectedCardType: 'obligatory_feature',order: 4,  moduleId: 'reality_mapping', bg: 'bg-indigo-50', border: 'border-indigo-400', text: 'text-indigo-700' },
   { id: 'jobs_to_be_done',         label: '1.5 Jobs-to-be-done',          expectedCardType: 'job',               order: 5,  moduleId: 'reality_mapping', bg: 'bg-purple-50', border: 'border-purple-400', text: 'text-purple-700' },
   { id: 'users_actors',            label: '1.6 Users / Actors',           expectedCardType: 'actor',             order: 6,  moduleId: 'reality_mapping', bg: 'bg-fuchsia-50',border: 'border-fuchsia-400',text: 'text-fuchsia-700'},
-  { id: 'failure_modes',           label: '1.7 Failure Modes',            expectedCardType: 'failure_mode',      order: 7,  moduleId: 'reality_mapping', bg: 'bg-rose-50',   border: 'border-rose-400',   text: 'text-rose-700'   },
-  { id: 'substitutes',             label: '1.8 Substitutes',              expectedCardType: 'substitute',        order: 8,  moduleId: 'reality_mapping', bg: 'bg-amber-50',  border: 'border-amber-400',  text: 'text-amber-700'  },
-  { id: 'boundary_cases',          label: '1.9 Boundary Cases',           expectedCardType: 'boundary_case',     order: 9,  moduleId: 'reality_mapping', bg: 'bg-teal-50',   border: 'border-teal-400',   text: 'text-teal-700'   },
+  { id: 'substitutes',             label: '1.7 Substitutes',              expectedCardType: 'substitute',        order: 7,  moduleId: 'reality_mapping', bg: 'bg-amber-50',  border: 'border-amber-400',  text: 'text-amber-700'  },
+  { id: 'boundary_cases',          label: '1.8 Boundary Cases',           expectedCardType: 'boundary_case',     order: 8,  moduleId: 'reality_mapping', bg: 'bg-teal-50',   border: 'border-teal-400',   text: 'text-teal-700'   },
 
   // ───────── Module 02: Feature Challenge ─────────
-  { id: 'feature_challenge',       label: '2.1 Feature Challenge (Variants)',     expectedCardType: 'transformation_handle', order: 10, moduleId: 'feature_challenge', bg: 'bg-violet-50',  border: 'border-violet-400', text: 'text-violet-700' },
-  { id: 'obligatory_reframing',    label: '2.2 Obligatory Reframing (Radical)',   expectedCardType: 'radical_reframe',       order: 11, moduleId: 'feature_challenge', bg: 'bg-purple-50',  border: 'border-purple-500', text: 'text-purple-800' },
+  { id: 'feature_challenge',       label: '2.1 Feature Challenge (Variants)',     expectedCardType: 'transformation_handle', order: 9,  moduleId: 'feature_challenge', bg: 'bg-violet-50',  border: 'border-violet-400', text: 'text-violet-700' },
+  { id: 'obligatory_reframing',    label: '2.2 Obligatory Reframing (Radical)',   expectedCardType: 'radical_reframe',       order: 10, moduleId: 'feature_challenge', bg: 'bg-purple-50',  border: 'border-purple-500', text: 'text-purple-800' },
 
   // ───────── Module 03: Friction & Opportunity ─────────
-  { id: 'friction',                label: '3.1 Карта трений',             expectedCardType: 'friction_point',      order: 12, moduleId: 'friction_opportunity', bg: 'bg-orange-50',  border: 'border-orange-400', text: 'text-orange-700' },
-  { id: 'contradiction',           label: '3.2 Поиск противоречий',       expectedCardType: 'contradiction',       order: 13, moduleId: 'friction_opportunity', bg: 'bg-rose-50',    border: 'border-rose-400',   text: 'text-rose-700'   },
-  { id: 'cross_field',             label: '3.3 Кросс-доменный перенос',   expectedCardType: 'cross_field_analogy', order: 14, moduleId: 'friction_opportunity', bg: 'bg-emerald-50', border: 'border-emerald-400',text: 'text-emerald-700'},
-  { id: 'opportunity',             label: '3.4 Дерево возможностей',      expectedCardType: 'opportunity_branch',  order: 15, moduleId: 'friction_opportunity', bg: 'bg-teal-50',    border: 'border-teal-400',   text: 'text-teal-700'   },
+  { id: 'friction',                label: '3.1 Карта трений',             expectedCardType: 'friction_point',      order: 11, moduleId: 'friction_opportunity', bg: 'bg-orange-50',  border: 'border-orange-400', text: 'text-orange-700' },
+  { id: 'contradiction',           label: '3.2 Поиск противоречий',       expectedCardType: 'contradiction',       order: 12, moduleId: 'friction_opportunity', bg: 'bg-rose-50',    border: 'border-rose-400',   text: 'text-rose-700'   },
+  { id: 'cross_field',             label: '3.3 Кросс-доменный перенос',   expectedCardType: 'cross_field_analogy', order: 13, moduleId: 'friction_opportunity', bg: 'bg-emerald-50', border: 'border-emerald-400',text: 'text-emerald-700'},
+  { id: 'opportunity',             label: '3.4 Дерево возможностей',      expectedCardType: 'opportunity_branch',  order: 14, moduleId: 'friction_opportunity', bg: 'bg-teal-50',    border: 'border-teal-400',   text: 'text-teal-700'   },
 
   // ───────── Module 04: Synthesis ─────────
-  { id: 'hypothesis',              label: '4.1 Генерация гипотез',        expectedCardType: 'hypothesis',          order: 16, moduleId: 'synthesis', bg: 'bg-indigo-50',  border: 'border-indigo-400', text: 'text-indigo-700' },
-  { id: 'critic',                  label: '4.2 Критический разбор',       expectedCardType: 'critique',            order: 17, moduleId: 'synthesis', bg: 'bg-amber-50',   border: 'border-amber-400',  text: 'text-amber-700'  },
-  { id: 'shortlist',               label: '4.3 Шортлист',                 expectedCardType: 'hypothesis',          order: 18, moduleId: 'synthesis', bg: 'bg-lime-50',    border: 'border-lime-400',   text: 'text-lime-700'   },
-  { id: 'validation',              label: '4.4 План валидации',           expectedCardType: 'validation_test',     order: 19, moduleId: 'synthesis', bg: 'bg-sky-50',     border: 'border-sky-400',    text: 'text-sky-700'    },
+  { id: 'hypothesis',              label: '4.1 Генерация гипотез',        expectedCardType: 'hypothesis',          order: 15, moduleId: 'synthesis', bg: 'bg-indigo-50',  border: 'border-indigo-400', text: 'text-indigo-700' },
+  { id: 'critic',                  label: '4.2 Критический разбор',       expectedCardType: 'critique',            order: 16, moduleId: 'synthesis', bg: 'bg-amber-50',   border: 'border-amber-400',  text: 'text-amber-700'  },
+  { id: 'shortlist',               label: '4.3 Шортлист',                 expectedCardType: 'hypothesis',          order: 17, moduleId: 'synthesis', bg: 'bg-lime-50',    border: 'border-lime-400',   text: 'text-lime-700'   },
+  { id: 'validation',              label: '4.4 План валидации',           expectedCardType: 'validation_test',     order: 18, moduleId: 'synthesis', bg: 'bg-sky-50',     border: 'border-sky-400',    text: 'text-sky-700'    },
 ];
 
 /** Первый stage первого модуля — куда переключаемся при миграции/новом проекте. */

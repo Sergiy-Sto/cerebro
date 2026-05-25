@@ -8,7 +8,6 @@ const VALID_CARD_TYPES: CardType[] = [
   'accidental_feature',
   'job',
   'actor',
-  'failure_mode',
   'substitute',
   'boundary_case',
   'transformation_handle',

@@ -6,7 +6,6 @@ export type StageId =
   | 'obligatory_vs_accidental'
   | 'jobs_to_be_done'
   | 'users_actors'
-  | 'failure_modes'
   | 'substitutes'
   | 'boundary_cases'
   // — Module 02: Feature Challenge (2 sub-modules) —
@@ -20,7 +19,7 @@ export type StageId =
 export type CardType =
   | 'observation_item' | 'search_finding'
   | 'dimension' | 'obligatory_feature' | 'accidental_feature'
-  | 'job' | 'actor' | 'failure_mode' | 'substitute' | 'boundary_case'
+  | 'job' | 'actor' | 'substitute' | 'boundary_case'
   | 'transformation_handle' | 'radical_reframe'
   | 'friction_point' | 'contradiction' | 'cross_field_analogy'
   | 'opportunity_branch' | 'hypothesis' | 'critique' | 'validation_test';

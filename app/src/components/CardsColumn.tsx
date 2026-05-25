@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type Dispatch } from 'react';
+import { useState, useRef, type Dispatch } from 'react';
 import type { Project } from '../state/types';
 import { STAGES } from '../state/stages';
 import { cardsByStage, statsForStage, getCard, cardLineage } from '../state/selectors';
@@ -22,7 +22,6 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null);
-  const autoGenKey = useRef('');
   const abortRef = useRef<AbortController | null>(null);
 
   const stageConfig = STAGES.find((s) => s.id === project.activeStageId)!;
@@ -34,22 +33,12 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   const nextStage = !isLastStage ? STAGES[currentStageIndex + 1] : null;
   const canAdvance = stats.interesting >= 1 && !isLastStage;
 
-  useEffect(() => {
-    if (autoGenerating) return;
-    if (project.cards.length === 0) return; // свежий проект — auto-all в Workbench
-    const key = `${project.id}:${project.activeStageId}`;
-    if (cards.length === 0 && getApiKey() && !isGenerating && autoGenKey.current !== key) {
-      autoGenKey.current = key;
-      // Защита от race condition: даём 300ms на случай если auto-all только-только стартовал
-      // и autoGenerating prop ещё не успел обновиться
-      const t = setTimeout(() => {
-        if (autoGenerating) return; // late check
-        handleGenerate();
-      }, 300);
-      return () => clearTimeout(t);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, project.activeStageId, cards.length, autoGenerating, project.cards.length]);
+  // Auto-gen в CardsColumn НАМЕРЕННО отключён:
+  // Раньше при переключении на пустой стейдж CardsColumn запускал свою генерацию.
+  // Это создавало race condition с Workbench auto-all (он тоже переключает стейджи через
+  // SET_ACTIVE_STAGE и параллельно генерит) → двойная генерация, двойные расходы.
+  // Теперь автогенерация — только из Workbench (запуск всего auto-all).
+  // Одиночная генерация конкретного стейджа — только через явный клик "Генерировать".
 
   function handleNextStage() {
     if (nextStage) {

@@ -104,11 +104,27 @@ function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'ADD_CARD':
-      return updateProjectInState(state, action.payload.projectId, (p) => ({
-        ...p,
-        cards: [...p.cards, action.payload.card],
-        updatedAt: new Date().toISOString(),
-      }));
+      return updateProjectInState(state, action.payload.projectId, (p) => {
+        // Defensive dedup: если карточка с таким же title уже есть в этом stage —
+        // отбрасываем. Это страховка от race conditions (двойная генерация).
+        // Title — достаточно стабильный ключ; description может отличаться даже
+        // при дубле, но title обычно одинаковый.
+        const newCard = action.payload.card;
+        const isDuplicate = p.cards.some(
+          (c) =>
+            c.stageId === newCard.stageId &&
+            c.title.trim().toLowerCase() === newCard.title.trim().toLowerCase()
+        );
+        if (isDuplicate) {
+          // тихо отбрасываем дубль — не ломаем поток генерации, просто игнорим
+          return p;
+        }
+        return {
+          ...p,
+          cards: [...p.cards, newCard],
+          updatedAt: new Date().toISOString(),
+        };
+      });
 
     case 'UPDATE_CARD':
       return updateProjectInState(state, action.payload.projectId, (p) => ({

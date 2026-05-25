@@ -12,13 +12,14 @@ import { STAGES } from './stages';
  * Для 4.1 Hypothesis — НЕ исключаем ничего: это главный этап, риск потери качества высок.
  */
 const STAGE_CONTEXT_EXCLUDED_MODULES: Partial<Record<StageId, string[]>> = {
-  // 4.2 Critic — нужен только 4.1 (которую критикуем) + Module 03 (диагностика)
+  // 4.4 Critic — нужны 4.3 (гипотезы которые критикуем) + Module 03 Diagnosis + 4.1/4.2 (cross-field/opportunity)
   critic: ['reality_mapping', 'feature_challenge'],
 
-  // 4.3 Shortlist — нужны 4.1 (гипотезы) + 4.2 (критика) + Module 03 (контекст возможностей)
+  // 4.5 Shortlist — нужны 4.3 + 4.4 + Module 03 Diagnosis (контекст почему гипотезы вообще нужны)
   shortlist: ['reality_mapping', 'feature_challenge'],
 
-  // 4.4 Validation — нужны только этапы из Module 04 (4.3 шортлист + 4.1/4.2 для контекста)
+  // 4.6 Validation — нужны только последние этапы Module 04 (4.5 shortlist + 4.3/4.4 для контекста)
+  // Module 03 Diagnosis тоже не нужен — это уже про эксперименты, не про теорию болей
   validation: ['reality_mapping', 'feature_challenge', 'friction_opportunity'],
 };
 

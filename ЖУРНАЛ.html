@@ -403,6 +403,36 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-26 · Module 03/04 реструктуризация</div>
+      <div class="decision-title">🔀 Cross-field (3.3) и Opportunity Tree (3.4) переехали в Module 04 Synthesis</div>
+      <div class="decision-why">
+        <strong>Проблема:</strong> Module 03 назывался "Friction & Opportunity" и содержал смесь:
+        диагностики (3.1 Friction, 3.2 Contradictions) и синтеза (3.3 Cross-field, 3.4 Opportunity Tree).
+        Это методологически неаккуратно — Cross-field и Opportunity Tree это **поиск решений**, не диагностика.<br>
+        <strong>Решение:</strong> Module 03 переименован в "Diagnosis" (только 2 под-модуля).
+        Cross-field и Opportunity Tree перенесены в Module 04 Synthesis как 4.1 и 4.2.
+        Logичный поток теперь:
+        <ul>
+          <li><strong>Module 03 Diagnosis</strong> (2 sub-modules) — диагноз болей и tensions</li>
+          <li><strong>Module 04 Synthesis</strong> (6 sub-modules) — синтез решений + валидация</li>
+        </ul>
+        <strong>Сдвиг нумерации в Module 04:</strong>
+        <ul>
+          <li>3.3 → 4.1 Cross-field Transfer</li>
+          <li>3.4 → 4.2 Opportunity Tree</li>
+          <li>4.1 Hypothesis → 4.3</li>
+          <li>4.2 Critic → 4.4</li>
+          <li>4.3 Shortlist → 4.5</li>
+          <li>4.4 Validation → 4.6</li>
+        </ul>
+        <strong>Технически:</strong> stageId не меняется (`cross_field`, `opportunity`, ...). Меняется только
+        moduleId, order и label. Старые карточки не теряются, просто видны в другом модуле.<br>
+        <strong>Bonus:</strong> Module 04 теперь полноценно отражает "синтез решений" — 6 этапов от поиска
+        аналогов до плана валидации.
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-26 · 1.7 Failure Modes удалён</div>
       <div class="decision-title">🪓 Убран этап 1.7 Failure Modes — дублировал 3.1 Friction Map</div>
       <div class="decision-why">

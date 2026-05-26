@@ -93,11 +93,11 @@
     <div class="status-grid">
       <div class="status-card">
         <div class="status-label">Фаза</div>
-        <div class="status-value">Reality Mapping arch v1 (deploy)</div>
+        <div class="status-value">Opportunity Lens v1 (функциональный режим)</div>
       </div>
       <div class="status-card">
         <div class="status-label">Следующий шаг</div>
-        <div class="status-value">Прогнать на 2-3 темах, докрутить промпты следующих этапов</div>
+        <div class="status-value">Прогнать Кофейню заново на Opportunity Lens, сравнить шортлист с предыдущим (плоско-операционным)</div>
       </div>
       <div class="status-card">
         <div class="status-label">Прод</div>
@@ -245,6 +245,45 @@
     <div class="section-header">
       <div class="section-icon" style="background:#f5f3ff;">🧠</div>
       <h2>История решений</h2>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-26 · Opportunity Lens v1</div>
+      <div class="decision-title">🪟 Вторая ось мышления через всю функциональную методологию — opportunity creation рядом с pain solving</div>
+      <div class="decision-why">
+        <strong>Диагноз:</strong> На реальном тесте Кофейни шортлист получился чисто <em>операционным</em>: прозрачность очереди, честные слоты, мониторинг проходимости, подписка на зерно, учёт еды. 5 из 5 гипотез — pain-solving, ни одной про opportunity creation. Никакого "магнита", никакого нового сценария / ритуала / категории.<br>
+        <strong>Корень:</strong> 14 из 18 стейджей системно смотрели через линзу <em>патологии</em> (что лишнее / больное / ломается / противоречит). Opportunity-flavored были только 4.1 Cross-field и 4.2 Opportunity Tree. Все остальные автоматически вели модель в "найди боль → сними". Один блок в конце не мог перебить рамку, сформированную на 12 предыдущих стейджах.<br>
+        <strong>Решение:</strong> ввести <strong>OPPORTUNITY_LENS</strong> как сквозной блок второй оси мышления. Не новый модуль — это расширение существующих стейджей.
+        <ul>
+          <li><strong>OPPORTUNITY_LENS блок</strong> — сквозной prompt-фрагмент с метафреймом "мы ищем коммерческие возможности, не диагностируем" + опорные примеры (стол → ножки vs из стены; кофейня → снизить аренду vs точка на маршруте). Инжектируется в 1.4, 2.1, 2.2, 3.1, 3.2, 4.2, 4.3.</li>
+          <li><strong>1.4 Obligatory vs Accidental</strong> — поле <em>Opportunity potential</em> для случайных признаков (что выглядит банально, а может быть точкой опоры).</li>
+          <li><strong>2.1 Feature Challenge</strong> — раздел B opportunity-вопросов рядом с pain-вопросами; на выходе каждой карточки два поля <em>Pain reduced</em> и <em>Opportunity opened</em>; in-context пример стола.</li>
+          <li><strong>2.2 Obligatory Reframing</strong> — добавлена вторая ось "случайное как упущенный главный актив" (пример Starbucks: третье место было случайным, стало главным активом).</li>
+          <li><strong>3.1 Friction Map</strong> — для каждой friction добавлено поле <em>Opportunity opened</em>: премиум-сегмент / новая категория / market gap / friction-as-feature.</li>
+          <li><strong>3.2 Contradiction</strong> — 9-й вопрос "что разрешение (не смягчение) tension открывает".</li>
+          <li><strong>4.2 Opportunity Tree</strong> — тип каждой opportunity (pain-solving / opportunity-amplifying / new-category) для последующей квоты в 4.3.</li>
+          <li><strong>4.3 Hypothesis</strong> — главный фрейм перенастроен: гипотеза = коммерческая ставка, не лечение. Новая квота 30/30/30: pain-solving / opportunity-amplifying / new-category + остаток. Анти-паттерн "все 5 гипотез pain-solving = ловушка функционализма".</li>
+          <li><strong>4.4 Critic</strong> — добавлена ось B "критика против пресности": категориальная смелость, заметность для рынка, "очевидность", асимметрия апсайда, pain-balance. Двумерная оценка (риск-аккуратность × категориальная смелость).</li>
+          <li><strong>4.5 Shortlist</strong> — добавлена третья ось отбора "размер возможности / смелость". Без неё смелые ставки автоматически проигрывают осторожным итерациям. Ограничение: pain-only гипотезы не более 60% шортлиста.</li>
+        </ul>
+        <strong>Не тронуто:</strong> 1.1-1.3, 1.5-1.8 (это reality mapping, opportunity-разворот рано); 4.1 Cross-field (уже opportunity-flavored по природе); 4.6 Validation (механика тестирования).<br>
+        <strong>Метафрейм в одном предложении:</strong> "мы не диагносты — мы ищем коммерческие возможности; анализ это сырьё, а не цель."<br>
+        <strong>Связь с креативным режимом:</strong> Opportunity Lens — это всё ещё функциональная аналитика, просто двунаправленная (pain + opportunity). Креативный режим (отдельная архитектурная развилка) — это ещё другой пласт: магнит / эстетика / ритуал / идентичность. Opportunity Lens — это <em>дешёвый эксперимент перед дорогим</em>: если она даёт сдвиг в шортлисте → можно идти в полноценный креативный режим как следующий шаг с пониманием что функциональный достиг потолка. Если не даёт → креативный режим тем более нужен.<br>
+        <strong>Технически:</strong> один файл <code>app/src/utils/prompts.ts</code> (+234/-43). Никаких миграций данных. Деплой через GitHub Actions.<br>
+        <strong>Следующий шаг:</strong> прогнать Кофейню заново на новых промптах, сравнить шортлист с предыдущим (плоско-операционным).
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-26 · Cost log honesty</div>
+      <div class="decision-title">💰 Cost log стал считать стоимость на лету — исторические записи отражают актуальный прайс</div>
+      <div class="decision-why">
+        <strong>Проблема:</strong> CostEntry хранил <code>cost</code> как статичное число, вычисленное на момент записи. После обновления pricing.ts (старые $1.50/$10 → актуальные $5/$30 для gpt-5.5) исторические записи продолжали показывать старые цены. Лог недооценивал реальную стоимость в ~2.5× — $4.29 в логе vs $11 в OpenAI Dashboard.<br>
+        <strong>Решение:</strong> добавлена функция <code>entryCost(entry)</code> — пересчёт по актуальному PRICING на лету. <code>totalCostToday</code>, <code>totalCostAll</code>, <code>breakdown</code> теперь используют её. <code>appendCostEntry</code> больше не пишет cost (поле оставлено optional для совместимости). Любые изменения цен в pricing.ts теперь автоматически отражаются на исторических данных.<br>
+        <strong>После фикса:</strong> $4.29 → $13.41 (фактический $11-13 из OpenAI). Переоценка ~5-10% — в пределах погрешности (остаточный гэп от неучтённого prompt caching, который OpenAI считает по 10% от стандарта).<br>
+        <strong>Урок про экономику:</strong> при структуре методологии "длинная цепочка из 18 стейджей" стоимость на 90% состоит из <em>input</em>, не output. Карточки/output — копейки сверху. Поэтому будущая оптимизация бить должна по input (AI-summary в цепочке, фильтр контекста), а не по output (длина описаний, число карточек).<br>
+        <strong>Поправка:</strong> output не совсем бесплатен — он становится input для следующих стейджей. Жирная карточка из ранних стейджей умножается по всей цепочке потомков. То есть AI-summary в цепочке контекста — не "бонус для экономии", а обязательный механизм при длинной цепочке.
+      </div>
     </div>
 
     <div class="decision important">
@@ -400,6 +439,73 @@
     <div class="section-header">
       <div class="section-icon" style="background:#f5f3ff;">💡</div>
       <h2>Идеи на потом (отложенные фичи)</h2>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">приоритет: высокий · 2026-05-26 (после теста Opportunity Lens)</div>
+      <div class="decision-title">🎨 Креативный режим — отдельная архитектурная развилка (выбор на старте проекта)</div>
+      <div class="decision-why">
+        <strong>Контекст:</strong> На тесте Кофейни обнаружено что методология системно заточена на pain-solving (функциональный режим). Креативные концепты (магнит, эстетика, ритуал, идентичность) рождаются из <em>другой</em> логики, не из аналитики болей. Opportunity Lens (текущая правка) — это <em>двунаправленная функциональная аналитика</em>. Креативный режим — это вообще <em>другой пласт</em>.<br>
+        <strong>Гипотеза:</strong> архитектурно нужны два режима, выбираемых на старте проекта (radio button: Функциональный / Креативный), сохранение в <code>project.mode</code>.<br>
+        <strong>Структура креативного режима (черновик):</strong>
+        <ul>
+          <li>Свой Module 01 — не Reality Mapping, а <em>Vibe Scan</em>: эстетика рядом с категорией / места, ритуалы, истории / эмоции / архетипы и культурные референсы</li>
+          <li>Общий структурный слой с функциональным режимом: 1.3 Fundamental Dimensions / 1.4 Obligatory vs Accidental / 2.1 Feature Challenge / 2.2 Obligatory Reframing — деконструкция конструктора нужна в обоих режимах</li>
+          <li>Свои линзы концепта: Place / Ritual / Identity / Aesthetic / Story / Social Trigger / Persona / Legend / Audience / Naming Hook / Object of Desire / Repeatable Habit / Photo Hook</li>
+          <li>Своя 4.3 — не Hypothesis Generation, а <em>Concept Hypothesis Generation</em> — концепты-магниты, не гипотезы про боль</li>
+          <li>Своя 4.4 — критика не "что сломается" + "не пресно ли", а "сильный ли образ", "устойчив ли как магнит", "не банальный ли"</li>
+          <li>System prompt: не "продакт за чашкой кофе", а <em>концепт-дизайнер / арт-директор</em></li>
+        </ul>
+        <strong>Reference Pack:</strong> 20-50 примеров сильных концептов из реальной жизни (Blue Bottle, Aesop store, Cereal Magazine cafe, Starbucks-как-третье-место и др.) в промпте — это in-context learning. Без него модель будет генерить плоский креатив. С ним — есть шанс на настоящий сдвиг. Сбор Reference Pack — задача с большой долей "вкуса", участие пользователя обязательно.<br>
+        <strong>Развилка architecturally:</strong> либо <em>полностью раздельные пайплайны</em> с общим стартом ("что за объект"), либо <em>один pipeline с развилкой</em> после Module 01.<br>
+        <strong>Когда:</strong> после прогона Кофейни на Opportunity Lens. Если Opportunity Lens даёт сдвиг — креативный режим следующим шагом. Если не даёт — креативный тем более нужен (функциональный достиг потолка).
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">приоритет: ближайший · 2026-05-26</div>
+      <div class="decision-title">🧪 Валидация по требованию — убрать 4.6 Validation как отдельный этап, перенести в кнопку на гипотезе</div>
+      <div class="decision-why">
+        <strong>Что:</strong> Сейчас 4.6 План валидации генерирует тесты для ВСЕХ шортлист-гипотез в одном вызове ($0.25-0.83). На практике пользователь хочет тестировать обычно 1-2 гипотезы, не все 5-7.<br>
+        <strong>Идея пользователя:</strong> убрать 4.6 как обязательный стейдж. Вместо него добавить кнопку "🧪 План валидации" на каждой карточке в 4.5 Shortlist (и возможно на 4.3 Hypothesis тоже). По клику — ad-hoc генерация плана валидации для одной этой гипотезы с полным её контекстом.<br>
+        <strong>Плюсы:</strong>
+        <ul>
+          <li>Платим только за то что реально нужно (-50-80% расхода на этом этапе)</li>
+          <li>План валидации становится <em>фокусным</em> — одна гипотеза → детальный план, не размазанный по 7 шортлист-карточкам</li>
+          <li>Можно генерить несколько вариантов плана для одной гипотезы (a/b разный угол)</li>
+          <li>Симметрично с механикой "💬 Спросить" на карточках</li>
+        </ul>
+        <strong>Минусы:</strong>
+        <ul>
+          <li>Auto-all теряет последний автоматический этап — методология не "доводится до конца" сама</li>
+          <li>Нужно решить где хранить результат — отдельный CardType <code>validation_plan</code> привязанный к гипотезе через <code>derivedFromIds</code>?</li>
+        </ul>
+        <strong>Решение архитектурно:</strong> 4.6 удаляется из STAGES. Добавляется кнопка на карточке гипотезы/шортлиста. План валидации сохраняется как отдельная карточка с <code>parentCardId</code> (или похожим механизмом) — видна на родительской карточке как "развёрнутый блок".<br>
+        <strong>Когда:</strong> после теста Opportunity Lens и анализа дублей.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">приоритет: ближайший · 2026-05-26</div>
+      <div class="decision-title">🔁 Системная проблема дублей — нужно усилить дедуп</div>
+      <div class="decision-why">
+        <strong>Что:</strong> На прогоне Кофейни обнаружены дубликаты карточек по нескольким стейджам (1.2 Search Scan, 1.3 Fundamental Dimensions, 1.8 Boundary Cases, 3.1 Карта трений). Иногда точные дубли (одинаковый title), иногда near-duplicates (title отличается на пару слов).<br>
+        <strong>Текущая дедуп-логика</strong> (store.ts, ADD_CARD reducer):
+        <pre style="font-size:12px;background:#f5f5f5;padding:8px;border-radius:4px;">c.stageId === newCard.stageId &amp;&amp;
+c.title.trim().toLowerCase() === newCard.title.trim().toLowerCase()</pre>
+        Только exact match (case-insensitive, trimmed). Не ловит near-duplicates типа "Сбой: один и тот же напиток получ..." vs "Сбой: один и тот же напиток кажд...".<br>
+        <strong>Также:</strong> точные дубли в Search Scan (1.2) подозрительны — возможно баг в SSE-парсере Responses API (карточка парсится дважды, через flushLines() + flushAll()).<br>
+        <strong>Идея пользователя:</strong> добавить в промпт правило "перед генерацией проверь что нет такой карточки". Это будет работать частично — модель уже видит existingBlock в промпте, но всё равно генерит. Нужна доп. защита на reducer-уровне.<br>
+        <strong>План:</strong>
+        <ul>
+          <li>Усилить reducer-дедуп: помимо exact title, проверять <em>префикс</em> (первые 40 символов lowercase) — если матчится → дубль</li>
+          <li>Возможно добавить Levenshtein-дистанцию для очень близких title (но это сложнее)</li>
+          <li>Найти и закрыть баг в Search Scan parser-е (двойной flush одной карточки)</li>
+          <li>Усилить промпт-уровневое предупреждение в existingBlock — упомянуть конкретные паттерны "не повторяй even с изменённой формулировкой"</li>
+        </ul>
+        <strong>Экономия:</strong> дубли — это лишние карточки в контексте для следующих стейджей (input × число потомков). Если убрать 30% дублей на ранних стейджах — экономия 10-20% на поздних.<br>
+        <strong>Когда:</strong> до следующего теста Кофейни (чтобы тест был чистый).
+      </div>
     </div>
 
     <div class="decision important">

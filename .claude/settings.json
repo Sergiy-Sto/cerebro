@@ -1,5 +1,17 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(wget * | bash)"
+    ],
     "allow": [
       "PowerShell(*)",
       "Bash(git *)",
@@ -7,6 +19,13 @@
       "Bash(npm *)",
       "Bash(npx *)",
       "Bash(node *)",
+      "Bash(curl *)",
+      "Bash(sleep *)",
+      "Bash(until *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(echo *)",
+      "Bash(grep *)",
       "mcp__Claude_in_Chrome__computer",
       "mcp__Claude_in_Chrome__navigate",
       "mcp__Claude_in_Chrome__tabs_context_mcp",
@@ -28,6 +47,7 @@
       "mcp__Claude_in_Chrome__resize_window",
       "mcp__Claude_in_Chrome__form_input",
       "mcp__Claude_in_Chrome__gif_creator",
+      "mcp__Claude_in_Chrome__browser_batch",
       "mcp__Claude_Preview__preview_screenshot",
       "mcp__Claude_Preview__preview_start",
       "mcp__Claude_Preview__preview_stop",
@@ -47,7 +67,6 @@
       "mcp__ccd_session_mgmt__search_session_transcripts",
       "WebFetch(*)",
       "WebSearch(*)"
-    ],
-    "deny": []
+    ]
   }
 }

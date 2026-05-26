@@ -1,30 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "PowerShell(if \\(!\\(Test-Path \"C:\\\\Users\\\\user\\\\Desktop\\\\++ Клод - Ноут\\\\Бизнес-Церебро\\\\.claude\"\\)\\) { New-Item -ItemType Directory -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\++ Клод - Ноут\\\\Бизнес-Церебро\\\\.claude\" -Force })",
-      "PowerShell($env:PATH -split ';' | ForEach-Object { $_ })",
-      "PowerShell(node -v 2>&1)",
-      "PowerShell(npm -v 2>&1)",
-      "Bash(npx tsc *)",
-      "mcp__Claude_in_Chrome__tabs_context_mcp",
-      "mcp__Claude_in_Chrome__navigate",
-      "mcp__Claude_in_Chrome__computer",
-      "mcp__Claude_in_Chrome__browser_batch",
-      "mcp__Claude_in_Chrome__find",
-      "mcp__Claude_in_Chrome__file_upload",
-      "mcp__Claude_in_Chrome__read_console_messages",
-      "mcp__Claude_in_Chrome__read_network_requests",
-      "mcp__Claude_in_Chrome__javascript_tool",
-      "Bash(Get-ChildItem \"C:\\\\Users\\\\user\\\\Desktop\\\\jsc\\\\\" | Select-Object Name, Length | Sort-Object Name)",
-      "Bash(ls \"C:\\\\Users\\\\user\\\\Desktop\\\\++ Клод - Ноут\" 2>/dev/null)",
-      "Bash(git -C \"C:\\\\Users\\\\user\\\\Desktop\\\\++ Клод - Ноут\\\\Бизнес-Церебро\" status)",
-      "Bash(git init *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git remote *)",
-      "Bash(git push *)",
-      "Bash(gh run *)",
-      "Bash(grep -n '`' src/utils/prompts.ts)"
-    ]
+    "allow": []
   }
 }

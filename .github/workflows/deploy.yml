@@ -33,6 +33,10 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./app/dist/
           server-dir: /public_html/cerebro/
+          # state-name изменён 2026-05-26 чтобы форсировать полный re-upload —
+          # старый state-file заглючил и incremental sync пропускал обновления
+          # (Actions показывали success, но файлы на сервере не обновлялись).
+          state-name: .ftp-deploy-sync-state-v2.json
           exclude: |
             **/.git*
             **/.git*/**

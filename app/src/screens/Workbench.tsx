@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, type Dispatch, type ChangeEvent } from 'react';
-import type { Project, Card } from '../state/types';
+import type { Project, Card, StageId } from '../state/types';
 import type { StoreAction } from '../state/store';
 import { getCard, cardsByStage, getContextCardsForStage } from '../state/selectors';
 import { STAGES, FIRST_STAGE_ID } from '../state/stages';
@@ -115,6 +115,12 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     // Local card accumulator — not affected by async React render timing
     const generatedCards: Card[] = [];
 
+    // 🛑 Временный stop-флаг auto-all — пока калибруем методологию на 4.3 Hypothesis,
+    // нет смысла критиковать (4.4) и шортлистить (4.5) слабые гипотезы.
+    // Меняем на null когда гипотезы станут достаточно качественными.
+    // 4.4 и 4.5 остаются доступны вручную через CardsColumn "Генерировать".
+    const STOP_AUTO_AFTER_STAGE: StageId | null = 'hypothesis';
+
     try {
       for (let i = 0; i < STAGES.length; i++) {
         // Если на паузе — ждём пока снимут, проверяя каждые 250мс. Стоп — выход.
@@ -212,6 +218,12 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           }
           // Реальная ошибка — записываем и выходим из цикла
           throw stageErr;
+        }
+
+        // 🛑 Временный stop после калибровочного стейджа (см. STOP_AUTO_AFTER_STAGE выше)
+        if (STOP_AUTO_AFTER_STAGE && stage.id === STOP_AUTO_AFTER_STAGE) {
+          setAutoGenProgress(`✓ Авто-генерация остановлена после ${stage.label} (4.4 Critic и 4.5 Shortlist — вручную)`);
+          break;
         }
       }
     } catch (err) {

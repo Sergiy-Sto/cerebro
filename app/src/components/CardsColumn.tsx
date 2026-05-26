@@ -85,6 +85,12 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   }
 
   async function handleGenerate(isThinkMore = false) {
+    // Local narrowing — TS не narrow-ит замыкание из early return снаружи.
+    // Если stageConfig undefined, кнопка генерации не должна быть видна (fallback render
+    // уже сработал выше), но защищаемся ещё раз для типов.
+    if (!stageConfig) return;
+    const sc = stageConfig;
+
     const apiKey = getApiKey();
     if (!apiKey) {
       onOpenApiKey();
@@ -101,7 +107,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
     try {
       // Контекст с применением правил: предыдущие по order, без discarded,
       // без целых модулей которые не нужны late-stage (см. selectors.ts)
-      const contextCards = getContextCardsForStage(project, stageConfig.id);
+      const contextCards = getContextCardsForStage(project, sc.id);
       const existingCards = isThinkMore ? cards : [];
 
       const stageCards = cardsByStage(project, project.activeStageId);
@@ -117,7 +123,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
               id: newId(),
               number: maxNum,
               stageId: project.activeStageId,
-              type: stageConfig.expectedCardType,
+              type: sc.expectedCardType,
               title: gen.title,
               description: gen.description,
               tags: gen.tags,
@@ -129,7 +135,7 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
               model,
               derivedFromIds: gen.derivedFromIds,
               sources: gen.sources,
-              confidence: stageConfig.usesWebSearch ? 'search_snippet_supported' : 'assumed',
+              confidence: sc.usesWebSearch ? 'search_snippet_supported' : 'assumed',
             },
           },
         });
@@ -138,11 +144,11 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
       const logContext = {
         projectId: project.id,
         projectTitle: project.title,
-        stageId: stageConfig.id,
-        stageLabel: stageConfig.label,
+        stageId: sc.id,
+        stageLabel: sc.label,
       };
 
-      if (stageConfig.usesWebSearch) {
+      if (sc.usesWebSearch) {
         await generateWithSearchStream(
           project.activeStageId, project, apiKey, contextCards, existingCards,
           onCard,

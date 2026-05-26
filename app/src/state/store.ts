@@ -42,6 +42,14 @@ function migrate(state: AppState): AppState {
       (project as any).activeStageId = 'friction';
       mutated = true;
     }
+    // 2026-05-26: 4.6 Validation удалён как обязательный стейдж —
+    // вместо него кнопка "🧪 План валидации" на карточках гипотез/шортлиста.
+    // Если активный стейдж был на validation — переключаем на shortlist.
+    // Старые validation_test карточки в project.cards остаются как есть (их видно через детальные виды).
+    if ((project.activeStageId as string) === 'validation') {
+      (project as any).activeStageId = 'shortlist';
+      mutated = true;
+    }
   }
   if (mutated) {
     // Сохраним мигрированный state обратно (в фоне)
@@ -139,23 +147,46 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'ADD_CARD':
       return updateProjectInState(state, action.payload.projectId, (p) => {
-        // Defensive dedup: если карточка с таким же title уже есть в этом stage —
-        // отбрасываем. Это страховка от race conditions (двойная генерация).
-        // Title — достаточно стабильный ключ; description может отличаться даже
-        // при дубле, но title обычно одинаковый.
         const newCard = action.payload.card;
+
+        // Нормализация title для устойчивого матчинга — модель иногда пихает
+        // NBSP, разные тире, кривые кавычки, лишние пробелы.
+        const normalizeTitle = (s: string): string =>
+          s
+            .toLowerCase()
+            .replace(/[ \s]+/g, ' ')   // NBSP + множественные пробелы → один пробел
+            .replace(/[«»"""„"]/g, '"')      // нормализация кавычек
+            .replace(/[—–]/g, '-')           // длинные/средние тире → дефис
+            .replace(/[.,:;!?]+$/g, '')      // убираем хвостовую пунктуацию
+            .trim();
+
+        const newNorm = normalizeTitle(newCard.title);
+
+        // Защита от пустых title (мусор от LLM) — не сохраняем
+        if (!newNorm) return p;
+
+        // Дедуп: exact match нормализованного title в том же stage
         const isDuplicate = p.cards.some(
-          (c) =>
-            c.stageId === newCard.stageId &&
-            c.title.trim().toLowerCase() === newCard.title.trim().toLowerCase()
+          (c) => c.stageId === newCard.stageId && normalizeTitle(c.title) === newNorm
         );
         if (isDuplicate) {
           // тихо отбрасываем дубль — не ломаем поток генерации, просто игнорим
           return p;
         }
+
+        // Number collision-proof: всегда вычисляем номер из текущего состояния
+        // проекта в момент записи. Локальный maxNum в onCard теперь не источник
+        // правды — reducer переопределяет. Защищает от случаев когда onCard
+        // вызывался из нескольких параллельных потоков с собственными счётчиками.
+        const stageMaxNum = p.cards
+          .filter((c) => c.stageId === newCard.stageId)
+          .reduce((m, c) => Math.max(m, c.number), 0);
+
+        const finalCard: Card = { ...newCard, number: stageMaxNum + 1 };
+
         return {
           ...p,
-          cards: [...p.cards, newCard],
+          cards: [...p.cards, finalCard],
           updatedAt: new Date().toISOString(),
         };
       });

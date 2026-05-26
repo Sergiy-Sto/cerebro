@@ -568,3 +568,184 @@ export async function askQuestionStream(
   return { fullAnswer, tokensIn: usageIn, tokensOut: usageOut };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Validation plan для одной конкретной гипотезы (on-demand)
+// Используется кнопкой "🧪 План валидации" на карточках 4.3 / 4.5
+// Вместо обязательного 4.6 Validation стейджа (удалён 2026-05-26)
+// ─────────────────────────────────────────────────────────────────────
+
+export interface ValidationPlanContext {
+  /** Сама гипотеза для которой строим план */
+  hypothesis: Card;
+  /** Родительские карточки (через derivedFromIds — для глубины контекста). Опционально. */
+  ancestorCards?: Card[];
+  /** Тема проекта и опциональные ограничения/критерии */
+  projectFrame: string;
+  projectConstraints?: string[];
+  projectCriteria?: string[];
+}
+
+function buildValidationPlanMessages(ctx: ValidationPlanContext): Array<{ role: 'system' | 'user'; content: string }> {
+  const { hypothesis, ancestorCards = [], projectFrame, projectConstraints = [], projectCriteria = [] } = ctx;
+
+  const systemPrompt = `Ты — опытный продакт-аналитик. Помогаешь владельцу малого бизнеса спланировать проверку конкретной гипотезы максимально дёшево и быстро.
+
+Принципы:
+- Минимум денег и времени. Если есть выбор между интервью с 5 людьми ($0) и пилотом в реальном продукте ($5000) — начинай с интервью.
+- Конкретные цифры в плане: сколько респондентов, сколько денег на рекламу, сколько дней, какой порог "сработало".
+- Простой человеческий язык. Не "конверсия в воронке onboarding", а "сколько людей нажмут кнопку".
+- Для radical гипотез (категориально новых) — двухшаговый план: сначала "понимают ли концепт", потом "купят ли". Не смешивай в один тест.
+- Markdown-форматирование (заголовки, списки, **bold**) разрешается — рендеринг это поддерживает.`;
+
+  const contextBlock = [
+    `--- Тема проекта ---`,
+    projectFrame,
+    projectConstraints.length > 0 ? `Ограничения: ${projectConstraints.join('; ')}` : '',
+    projectCriteria.length > 0 ? `Критерии успеха: ${projectCriteria.join('; ')}` : '',
+    '',
+    `--- Гипотеза для проверки ---`,
+    `Название: ${hypothesis.title}`,
+    '',
+    `Описание:`,
+    hypothesis.description,
+    '',
+    hypothesis.metrics
+      ? `Самооценка модели: Новизна ${hypothesis.metrics.novelty}/10 · Сила ${hypothesis.metrics.strength}/10 · Реализация ${hypothesis.metrics.feasibility}/10 · Проверяемость ${hypothesis.metrics.testability}/10`
+      : '',
+    hypothesis.analysis ? `Анализ метрик: ${hypothesis.analysis}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const ancestorsBlock = ancestorCards.length > 0
+    ? `\n\n--- Контекст из предыдущих этапов (родительские карточки) ---\n` +
+      ancestorCards.map((c) => `[${c.stageId} #${c.number}] ${c.title}\n${c.description}`).join('\n\n')
+    : '';
+
+  const userPrompt = `${contextBlock}${ancestorsBlock}
+
+--- Задача ---
+
+Составь **дешёвый и быстрый план валидации** именно ЭТОЙ гипотезы. Структура:
+
+1. **Что именно проверяем** — одна конкретная вещь которую тест должен подтвердить/опровергнуть
+2. **Как** — конкретный метод (интервью N человек / лендинг + платный трафик / fake-door кнопка / Wizard of Oz — когда вручную имитируем продукт / опрос / прототип на бумаге)
+3. **Что измеряем** — конкретные метрики (число заявок, кликов, конверсия в %, готовность платить)
+4. **Какая цифра подтвердит** — конкретное число "сработало" (например: ≥15% кликнули, ≥3 заявки за неделю)
+5. **Какая цифра опровергнет** — конкретное число "не сработало"
+6. **Бюджет** — в долларах
+7. **Срок** — в днях/неделях
+8. **Что делать дальше:** если подтвердилось → следующий шаг; если опроверглось → стоит ли пересмотреть гипотезу или выбросить
+
+Если гипотеза radical (категориально новая) — раздели на ДВА теста: (a) понимают ли люди концепт вообще, (b) купят ли. Не путай.
+
+Если можно — предложи 2-3 АЛЬТЕРНАТИВНЫХ плана теста (одна гипотеза — несколько способов проверки на разной глубине: bare minimum / нормальный / тщательный). С указанием trade-off между ними по цене/времени/уверенности.
+
+Финальная строка: грубая оценка "вероятность что гипотеза подтвердится" — 0-10. Это не предсказание, а калибровка ожиданий.`;
+
+  return [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ];
+}
+
+/**
+ * Streaming генерация плана валидации для одной гипотезы.
+ * onDelta — частичные текстовые дельты (для живого вывода в UI).
+ * Возвращает финальный { fullText, tokensIn, tokensOut }.
+ *
+ * Стоимость: ~$0.05-0.15 за вызов (зависит от модели и длины гипотезы).
+ * Это в 5-10× дешевле чем старый 4.6 Validation который генерил планы
+ * для всех 5-7 шортлист-гипотез сразу.
+ */
+export async function generateValidationPlanForHypothesisStream(
+  ctx: ValidationPlanContext,
+  apiKey: string,
+  onDelta: (chunk: string) => void,
+  model = 'gpt-5.5',
+  logContext?: LogContext,
+  signal?: AbortSignal
+): Promise<{ fullText: string; tokensIn: number; tokensOut: number }> {
+  const messages = buildValidationPlanMessages(ctx);
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    signal,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: true,
+      stream_options: { include_usage: true },
+      ...(isReasoningModel(model) ? { max_completion_tokens: 4000 } : {}),
+      ...(supportsCustomTemperature(model) ? { temperature: 0.5 } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err?.error?.message ?? `OpenAI error ${response.status}`);
+  }
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = '';
+  let fullText = '';
+  let usageIn = 0;
+  let usageOut = 0;
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    sseBuffer += decoder.decode(value, { stream: true });
+    const sseLines = sseBuffer.split('\n');
+    sseBuffer = sseLines.pop() ?? '';
+
+    for (const sseLine of sseLines) {
+      if (!sseLine.startsWith('data: ')) continue;
+      const data = sseLine.slice(6).trim();
+      if (data === '[DONE]') { streamDone = true; break; }
+
+      try {
+        const chunk = JSON.parse(data) as {
+          choices?: Array<{ delta?: { content?: string } }>;
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
+        const delta = chunk.choices?.[0]?.delta?.content ?? '';
+        if (delta) {
+          fullText += delta;
+          onDelta(delta);
+        }
+        if (chunk.usage) {
+          usageIn = chunk.usage.prompt_tokens ?? 0;
+          usageOut = chunk.usage.completion_tokens ?? 0;
+        }
+      } catch { /* malformed SSE chunk */ }
+    }
+  }
+
+  // Fallback если usage не пришёл
+  if (usageIn === 0) {
+    const promptLen = messages.reduce((s, m) => s + m.content.length, 0);
+    usageIn = Math.ceil(promptLen / 2.5);
+  }
+  if (usageOut === 0) usageOut = Math.ceil(fullText.length / 2.5);
+
+  if (logContext) {
+    appendCostEntry({
+      ...logContext,
+      stageLabel: `${logContext.stageLabel} (план валидации)`,
+      model,
+      inputTokens: usageIn,
+      outputTokens: usageOut,
+    });
+  }
+
+  return { fullText, tokensIn: usageIn, tokensOut: usageOut };
+}
+

@@ -18,9 +18,9 @@ const STAGE_CONTEXT_EXCLUDED_MODULES: Partial<Record<StageId, string[]>> = {
   // 4.5 Shortlist — нужны 4.3 + 4.4 + Module 03 Diagnosis (контекст почему гипотезы вообще нужны)
   shortlist: ['reality_mapping', 'feature_challenge'],
 
-  // 4.6 Validation — нужны только последние этапы Module 04 (4.5 shortlist + 4.3/4.4 для контекста)
-  // Module 03 Diagnosis тоже не нужен — это уже про эксперименты, не про теорию болей
-  validation: ['reality_mapping', 'feature_challenge', 'friction_opportunity'],
+  // ВАЖНО: 'validation' удалён из активной методологии 2026-05-26 —
+  // вместо него ad-hoc кнопка "🧪 План валидации" на карточках с собственным
+  // фокусным промптом в openai.ts → generateValidationPlanForHypothesis().
 };
 
 export function getActiveProject(state: AppState): Project | null {

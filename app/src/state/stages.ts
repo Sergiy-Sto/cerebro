@@ -50,13 +50,16 @@ export const STAGES: StageConfig[] = [
   { id: 'friction',                label: '3.1 Карта трений',             expectedCardType: 'friction_point',      order: 11, moduleId: 'friction_opportunity', bg: 'bg-orange-50',  border: 'border-orange-400', text: 'text-orange-700' },
   { id: 'contradiction',           label: '3.2 Поиск противоречий',       expectedCardType: 'contradiction',       order: 12, moduleId: 'friction_opportunity', bg: 'bg-rose-50',    border: 'border-rose-400',   text: 'text-rose-700'   },
 
-  // ───────── Module 04: Synthesis (6 sub-modules — добавлены cross_field и opportunity из бывшего Module 03) ─────────
+  // ───────── Module 04: Synthesis (5 sub-modules — 4.6 Validation удалён 2026-05-26) ─────────
   { id: 'cross_field',             label: '4.1 Кросс-доменный перенос',   expectedCardType: 'cross_field_analogy', order: 13, moduleId: 'synthesis', bg: 'bg-emerald-50', border: 'border-emerald-400',text: 'text-emerald-700'},
   { id: 'opportunity',             label: '4.2 Дерево возможностей',      expectedCardType: 'opportunity_branch',  order: 14, moduleId: 'synthesis', bg: 'bg-teal-50',    border: 'border-teal-400',   text: 'text-teal-700'   },
   { id: 'hypothesis',              label: '4.3 Генерация гипотез',        expectedCardType: 'hypothesis',          order: 15, moduleId: 'synthesis', bg: 'bg-indigo-50',  border: 'border-indigo-400', text: 'text-indigo-700' },
   { id: 'critic',                  label: '4.4 Критический разбор',       expectedCardType: 'critique',            order: 16, moduleId: 'synthesis', bg: 'bg-amber-50',   border: 'border-amber-400',  text: 'text-amber-700'  },
   { id: 'shortlist',               label: '4.5 Шортлист',                 expectedCardType: 'hypothesis',          order: 17, moduleId: 'synthesis', bg: 'bg-lime-50',    border: 'border-lime-400',   text: 'text-lime-700'   },
-  { id: 'validation',              label: '4.6 План валидации',           expectedCardType: 'validation_test',     order: 18, moduleId: 'synthesis', bg: 'bg-sky-50',     border: 'border-sky-400',    text: 'text-sky-700'    },
+  // ВАЖНО: stage 'validation' удалён из активной методологии 2026-05-26.
+  // Вместо него — кнопка "🧪 План валидации" на карточках гипотез/шортлиста (см. CardDetail.tsx).
+  // StageId 'validation' и CardType 'validation_test' оставлены в types.ts для legacy-данных:
+  // старые validation-карточки продолжают видны в проекте, просто без активного стейджа в левой колонке.
 ];
 
 /** Первый stage первого модуля — куда переключаемся при миграции/новом проекте. */

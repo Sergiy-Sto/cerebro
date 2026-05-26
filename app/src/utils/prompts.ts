@@ -34,7 +34,19 @@ function formatCards(cards: Card[]): string {
 
 function existingBlock(existing: string): string {
   if (!existing) return '';
-  return `\nCRITICAL — these cards already exist. You MUST NOT repeat, rephrase, or generate anything thematically similar to them:\n${existing}\n`;
+  return `\nCRITICAL — these cards already exist. You MUST NOT repeat them, paraphrase them, or generate anything thematically similar.
+
+Specifically:
+- ❌ Same title with different formatting / punctuation / dashes / quotes → all count as duplicate
+- ❌ Same first 6-7 words even if ending differs ("Сбой: невидимая очередь из мобильных" + "Сбой: невидимая очередь у бариста" → duplicate)
+- ❌ Same core idea with synonyms ("Замена: домашняя кофемашина" + "Альтернатива: домашний эспрессо" → duplicate)
+- ❌ Splitting one card into two with slightly different angles → still duplicate
+
+If you find yourself generating a near-duplicate — STOP and pick a genuinely new angle, or generate fewer cards. Quality > quantity.
+
+Existing cards:
+${existing}
+`;
 }
 
 // ─────────────────────────────────────────────────────────────

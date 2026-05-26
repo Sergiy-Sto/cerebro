@@ -6,6 +6,7 @@ import type { StoreAction } from '../state/store';
 import CardForm from './CardForm';
 import CardDescription from './CardDescription';
 import CardChatModal from './CardChatModal';
+import ValidationPlanModal from './ValidationPlanModal';
 import ConfirmDialog from './ConfirmDialog';
 
 interface CardDetailProps {
@@ -20,6 +21,7 @@ export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' 
   const [showChildForm, setShowChildForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
 
   if (!card) {
     return (
@@ -219,6 +221,19 @@ export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' 
             )}
           </button>
 
+          {/* Кнопка "🧪 План валидации" — только для гипотез (4.3) и шортлист-карточек (4.5).
+              Заменила старый обязательный 4.6 Validation этап (удалён 2026-05-26).
+              Генерирует фокусный план валидации только для этой одной гипотезы. */}
+          {card.type === 'hypothesis' && (
+            <button
+              onClick={() => setShowValidation(true)}
+              className="px-3 py-1.5 text-xs border border-sky-400 text-sky-700 bg-sky-50 hover:bg-sky-100 font-medium"
+              title="Сгенерировать дешёвый и быстрый план валидации именно для этой гипотезы. Стоит ~$0.05-0.15."
+            >
+              🧪 План валидации
+            </button>
+          )}
+
           <button
             onClick={handleToggleInteresting}
             className={[
@@ -326,6 +341,15 @@ export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' 
           model={model}
           dispatch={dispatch}
           onClose={() => setShowChat(false)}
+        />
+      )}
+
+      {showValidation && (
+        <ValidationPlanModal
+          card={card}
+          project={project}
+          model={model}
+          onClose={() => setShowValidation(false)}
         />
       )}
     </div>

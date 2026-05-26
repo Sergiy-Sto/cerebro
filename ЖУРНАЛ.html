@@ -248,6 +248,58 @@
     </div>
 
     <div class="decision important">
+      <div class="decision-date">2026-05-26 · Validation refactor</div>
+      <div class="decision-title">🧪 4.6 Validation удалён как обязательный стейдж — кнопка "🧪 План валидации" на карточках гипотез/шортлиста</div>
+      <div class="decision-why">
+        <strong>Проблема:</strong> Старый 4.6 Plan валидации генерил тесты для ВСЕХ 5-7 шортлист-гипотез в одном вызове ($0.25-0.83). На практике пользователь тестирует обычно 1-2 гипотезы, остальные не нужны. Это переплата + расфокус (тесты разбавлены по 7 карточкам, каждый поверхностный).<br>
+        <strong>Решение:</strong> убрать 4.6 из STAGES, заменить на on-demand кнопку.
+        <ul>
+          <li><strong>stages.ts</strong> — `validation` удалён из STAGES. Module 04 теперь 5 sub-modules вместо 6.</li>
+          <li><strong>types.ts</strong> — StageId 'validation' и CardType 'validation_test' оставлены для legacy-данных (старые проекты не теряют карточки).</li>
+          <li><strong>store.ts migration</strong> — если activeStageId === 'validation' → переключаем на 'shortlist'. Старые validation_test карточки остаются в project.cards.</li>
+          <li><strong>openai.ts</strong> — новая функция <code>generateValidationPlanForHypothesisStream()</code>: принимает одну гипотезу + опциональные родительские карточки + контекст проекта; стримит фокусный план с реалистичными цифрами, альтернативными вариантами теста, оценкой "вероятность что подтвердится".</li>
+          <li><strong>ValidationPlanModal.tsx</strong> — новая модалка с авто-стартом первой генерации при открытии. Можно сгенерить несколько альтернативных вариантов плана, копировать в буфер, удалять.</li>
+          <li><strong>CardDetail.tsx</strong> — кнопка <em>"🧪 План валидации"</em> рядом с <em>"💬 Спросить"</em>, видна только для карточек <code>type === 'hypothesis'</code> (это и 4.3 Hypothesis, и 4.5 Shortlist).</li>
+        </ul>
+        <strong>Экономика:</strong> один план ~$0.05-0.15 (вместо ~$0.25-0.83 за весь шортлист). При типичном использовании (тестируешь 1-2 гипотезы) — снижение расхода на этом этапе в <strong>5-10×</strong>.<br>
+        <strong>Фокус:</strong> вместо размазанной валидации по 7 карточкам — один детальный план для конкретной гипотезы с 2-3 альтернативами на выбор (bare minimum / нормальный / тщательный).<br>
+        <strong>На будущее:</strong> возможно стоит добавить в CardDetail блок "Связанные тесты" с историей всех сгенерированных планов. Пока план живёт только в модалке до закрытия — пользователь копирует то что нужно. Если окажется востребовано — добавим сохранение как карточку.<br>
+        <strong>Не тронуто:</strong> STAGE_PROMPTS.validation в prompts.ts остался (нужен для TypeScript: StageId всё ещё включает 'validation'). Просто не вызывается через нормальный flow.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-26 · Дедуп карточек + number collision fix</div>
+      <div class="decision-title">🔁 Карточки больше не дублируются — number-collision-proof reducer + усиленная нормализация title</div>
+      <div class="decision-why">
+        <strong>Симптом с прогона Кофейни:</strong> в 1.2 / 1.3 / 1.8 / 3.1 видны дубликаты карточек. Иногда точные дубли по контенту, иногда — разные карточки с одинаковым номером (#1 #1). 3.1 Карта трений показывала 42 карточки вместо ожидаемых 8-15. 1.3 Fundamental Dimensions — 29 карточек вместо ожидаемых 8-10.<br>
+
+        <strong>Двухкомпонентный диагноз:</strong>
+        <ul>
+          <li><strong>Number collision.</strong> В Workbench.tsx auto-all для каждой stage-итерации использовался <code>let maxNum = 0</code>. Если стейдж генерировался дважды (пауза/продолжение, ошибка восстановления, кэш браузера) — каждый запуск стартовал нумерацию с 1, отсюда #1 #1 в UI.</li>
+          <li><strong>Слабая нормализация title в дедупе.</strong> Reducer ловил только exact match с trim() + toLowerCase(). Невидимые NBSP ( ), кривые кавычки (« » „"), разные тире (— – -), хвостовая пунктуация — всё это проскакивало как "разные" title.</li>
+        </ul>
+
+        <strong>Решение в store.ts (ADD_CARD reducer):</strong>
+        <ul>
+          <li><strong>Number collision-proof.</strong> Номер теперь вычисляется при записи из текущего состояния проекта: <code>stageMaxNum + 1</code>. Локальный maxNum в onCard — больше не источник правды, reducer переопределяет. Даже если onCard вызывался из нескольких параллельных потоков с собственными счётчиками — номера остаются непрерывными.</li>
+          <li><strong>Нормализация title:</strong> NBSP + множественные пробелы → один пробел; «»""„" → стандартные кавычки; — – → дефис; хвостовая пунктуация (точки/запятые/двоеточия) убирается.</li>
+          <li><strong>Защита от пустых title</strong> — мусор от LLM (пустая строка после нормализации) не сохраняется.</li>
+        </ul>
+
+        <strong>Решение в prompts.ts (existingBlock):</strong> усиленное предупреждение для модели с конкретными паттернами:
+        <ul>
+          <li>same title + разное форматирование/punctuation → дубль</li>
+          <li>same первые 6-7 слов с разным концом → дубль ("Сбой: невидимая очередь из мобильных" vs "Сбой: невидимая очередь у бариста" — это дубль)</li>
+          <li>same core idea с синонимами → дубль</li>
+          <li>splitting one card into two с slight angle → still дубль</li>
+        </ul>
+
+        <strong>Экономический эффект:</strong> дубли — это лишние карточки в контексте для следующих стейджей (input × число потомков). Если убрать ~30% дублей на ранних стейджах — экономия ~10-20% input-токенов на поздних. На прогоне Кофейни 3.1 с 42 карточками вместо 13 ставила Module 04 в положение перерасхода context на >2×.
+      </div>
+    </div>
+
+    <div class="decision important">
       <div class="decision-date">2026-05-26 · Opportunity Lens v1</div>
       <div class="decision-title">🪟 Вторая ось мышления через всю функциональную методологию — opportunity creation рядом с pain solving</div>
       <div class="decision-why">
@@ -462,53 +514,7 @@
       </div>
     </div>
 
-    <div class="decision important">
-      <div class="decision-date">приоритет: ближайший · 2026-05-26</div>
-      <div class="decision-title">🧪 Валидация по требованию — убрать 4.6 Validation как отдельный этап, перенести в кнопку на гипотезе</div>
-      <div class="decision-why">
-        <strong>Что:</strong> Сейчас 4.6 План валидации генерирует тесты для ВСЕХ шортлист-гипотез в одном вызове ($0.25-0.83). На практике пользователь хочет тестировать обычно 1-2 гипотезы, не все 5-7.<br>
-        <strong>Идея пользователя:</strong> убрать 4.6 как обязательный стейдж. Вместо него добавить кнопку "🧪 План валидации" на каждой карточке в 4.5 Shortlist (и возможно на 4.3 Hypothesis тоже). По клику — ad-hoc генерация плана валидации для одной этой гипотезы с полным её контекстом.<br>
-        <strong>Плюсы:</strong>
-        <ul>
-          <li>Платим только за то что реально нужно (-50-80% расхода на этом этапе)</li>
-          <li>План валидации становится <em>фокусным</em> — одна гипотеза → детальный план, не размазанный по 7 шортлист-карточкам</li>
-          <li>Можно генерить несколько вариантов плана для одной гипотезы (a/b разный угол)</li>
-          <li>Симметрично с механикой "💬 Спросить" на карточках</li>
-        </ul>
-        <strong>Минусы:</strong>
-        <ul>
-          <li>Auto-all теряет последний автоматический этап — методология не "доводится до конца" сама</li>
-          <li>Нужно решить где хранить результат — отдельный CardType <code>validation_plan</code> привязанный к гипотезе через <code>derivedFromIds</code>?</li>
-        </ul>
-        <strong>Решение архитектурно:</strong> 4.6 удаляется из STAGES. Добавляется кнопка на карточке гипотезы/шортлиста. План валидации сохраняется как отдельная карточка с <code>parentCardId</code> (или похожим механизмом) — видна на родительской карточке как "развёрнутый блок".<br>
-        <strong>Когда:</strong> после теста Opportunity Lens и анализа дублей.
-      </div>
-    </div>
-
-    <div class="decision important">
-      <div class="decision-date">приоритет: ближайший · 2026-05-26</div>
-      <div class="decision-title">🔁 Системная проблема дублей — нужно усилить дедуп</div>
-      <div class="decision-why">
-        <strong>Что:</strong> На прогоне Кофейни обнаружены дубликаты карточек по нескольким стейджам (1.2 Search Scan, 1.3 Fundamental Dimensions, 1.8 Boundary Cases, 3.1 Карта трений). Иногда точные дубли (одинаковый title), иногда near-duplicates (title отличается на пару слов).<br>
-        <strong>Текущая дедуп-логика</strong> (store.ts, ADD_CARD reducer):
-        <pre style="font-size:12px;background:#f5f5f5;padding:8px;border-radius:4px;">c.stageId === newCard.stageId &amp;&amp;
-c.title.trim().toLowerCase() === newCard.title.trim().toLowerCase()</pre>
-        Только exact match (case-insensitive, trimmed). Не ловит near-duplicates типа "Сбой: один и тот же напиток получ..." vs "Сбой: один и тот же напиток кажд...".<br>
-        <strong>Также:</strong> точные дубли в Search Scan (1.2) подозрительны — возможно баг в SSE-парсере Responses API (карточка парсится дважды, через flushLines() + flushAll()).<br>
-        <strong>Идея пользователя:</strong> добавить в промпт правило "перед генерацией проверь что нет такой карточки". Это будет работать частично — модель уже видит existingBlock в промпте, но всё равно генерит. Нужна доп. защита на reducer-уровне.<br>
-        <strong>План:</strong>
-        <ul>
-          <li>Усилить reducer-дедуп: помимо exact title, проверять <em>префикс</em> (первые 40 символов lowercase) — если матчится → дубль</li>
-          <li>Возможно добавить Levenshtein-дистанцию для очень близких title (но это сложнее)</li>
-          <li>Найти и закрыть баг в Search Scan parser-е (двойной flush одной карточки)</li>
-          <li>Усилить промпт-уровневое предупреждение в existingBlock — упомянуть конкретные паттерны "не повторяй even с изменённой формулировкой"</li>
-        </ul>
-        <strong>Экономия:</strong> дубли — это лишние карточки в контексте для следующих стейджей (input × число потомков). Если убрать 30% дублей на ранних стейджах — экономия 10-20% на поздних.<br>
-        <strong>Когда:</strong> до следующего теста Кофейни (чтобы тест был чистый).
-      </div>
-    </div>
-
-    <div class="decision important">
+<div class="decision important">
       <div class="decision-date">2026-05-26 · Module 03/04 реструктуризация</div>
       <div class="decision-title">🔀 Cross-field (3.3) и Opportunity Tree (3.4) переехали в Module 04 Synthesis</div>
       <div class="decision-why">

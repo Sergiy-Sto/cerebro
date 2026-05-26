@@ -291,6 +291,51 @@ Opportunity Lens — это <em>дешёвый эксперимент перед
 
 ---
 
+## existingBlock усилен (2026-05-26 поздний вечер) + удалён обязательный 4.6
+
+**Диагноз дублей:** на прогоне Кофейни видны дубли карточек в 1.2 / 1.3 / 1.8 / 3.1. Два корня:
+
+1. **Number collision** в Workbench auto-all (исправлено в `store.ts` — number теперь вычисляется в reducer при записи, не из локального счётчика onCard).
+2. **Слабая нормализация title в дедупе** (исправлено там же — теперь учитывает NBSP, кривые тире/кавычки, хвостовая пунктуация).
+3. **Модель сама генерила near-duplicates** — исправлено усилением `existingBlock` в `prompts.ts`.
+
+**Старая версия `existingBlock`** (минимальная):
+```
+CRITICAL — these cards already exist. You MUST NOT repeat, rephrase, or generate anything thematically similar to them:
+{existing}
+```
+
+**Новая версия** (с конкретными паттернами что считается дублем):
+```
+CRITICAL — these cards already exist. You MUST NOT repeat them, paraphrase them, or generate anything thematically similar.
+
+Specifically:
+- ❌ Same title with different formatting / punctuation / dashes / quotes → all count as duplicate
+- ❌ Same first 6-7 words even if ending differs ("Сбой: невидимая очередь из мобильных" + "Сбой: невидимая очередь у бариста" → duplicate)
+- ❌ Same core idea with synonyms ("Замена: домашняя кофемашина" + "Альтернатива: домашний эспрессо" → duplicate)
+- ❌ Splitting one card into two with slightly different angles → still duplicate
+
+If you find yourself generating a near-duplicate — STOP and pick a genuinely new angle, or generate fewer cards. Quality > quantity.
+
+Existing cards:
+{existing}
+```
+
+**Почему конкретные примеры:** общее "не повторяй" модель легко интерпретирует расширительно ("ну я же по-другому сформулировал, это не дубль"). Конкретные паттерны с примерами из реального теста — закрывают эту лазейку.
+
+### 4.6 Validation — удалён как обязательный stage
+
+Старый `validation` промпт остаётся в `STAGE_PROMPTS` (StageId 'validation' нужен для legacy), но не вызывается через нормальный flow. Вместо него — новая функция `generateValidationPlanForHypothesisStream()` в `openai.ts` с собственным фокусным промптом для **одной** гипотезы.
+
+**Отличия on-demand промпта от старого 4.6:**
+- Фокус на одну гипотезу вместо размазывания по 5-7 шортлист-карточкам
+- 8 секций плана (что проверяем / как / метрики / порог "сработало" / порог "не сработало" / бюджет / срок / что делать дальше)
+- Предложение 2-3 АЛЬТЕРНАТИВНЫХ планов теста (bare minimum / нормальный / тщательный) с trade-off
+- Финальная грубая оценка "вероятность что подтвердится" 0-10 — калибровка ожиданий
+- Для radical-гипотез — двухшаговый план: сначала "понимают ли концепт", потом "купят ли"
+
+---
+
 ## Принципы которые сейчас работают (саммари)
 
 1. **System prompt = роль "продакт объясняет коллеге"**, не "expert strategist"

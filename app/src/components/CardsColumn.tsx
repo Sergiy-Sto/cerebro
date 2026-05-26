@@ -24,9 +24,36 @@ export default function CardsColumn({ project, dispatch, onOpenApiKey, autoGener
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const stageConfig = STAGES.find((s) => s.id === project.activeStageId)!;
+  // Defensive: если activeStageId указывает на legacy stage (validation, definition,
+  // invert, search_notes и т.п. — раньше существовали, потом убраны), STAGES.find
+  // вернёт undefined. Падать нельзя — показываем fallback и предлагаем переключиться.
+  const stageConfig = STAGES.find((s) => s.id === project.activeStageId);
   const cards = cardsByStage(project, project.activeStageId).sort((a, b) => a.number - b.number);
   const stats = statsForStage(project, project.activeStageId);
+
+  // Early fallback render — legacy stage не существует в текущей методологии
+  if (!stageConfig) {
+    return (
+      <div className="w-[360px] shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 bg-amber-50">
+          <h2 className="text-base font-semibold text-amber-800">⚠ Legacy этап</h2>
+          <p className="text-xs text-amber-600 mt-0.5">
+            <code>{project.activeStageId}</code> больше не в методологии
+          </p>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 py-3 text-sm text-gray-600 space-y-2">
+          <p>
+            Этот этап был удалён или переименован. Карточек на нём:
+            <strong> {cards.length}</strong>. Они никуда не делись — выбери любой активный этап в
+            левой колонке, чтобы продолжить.
+          </p>
+          <p className="text-xs text-gray-400">
+            (Старые карточки доступны через детальный вид при клике на родителя.)
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const currentStageIndex = STAGES.findIndex((s) => s.id === project.activeStageId);
   const isLastStage = currentStageIndex === STAGES.length - 1;

@@ -31,7 +31,11 @@ export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' 
     );
   }
 
-  const stageConfig = STAGES.find((s) => s.id === card.stageId)!;
+  // Defensive: stageConfig может быть undefined для legacy-карточек со старыми stageId
+  // (validation, definition, invert, search_notes, entity_mapping, reality_summary,
+  // observation — раньше существовали, потом удалены/переименованы). Не падаем,
+  // показываем fallback с raw stageId.
+  const stageConfig = STAGES.find((s) => s.id === card.stageId);
 
   let parentCard: Card | null = null;
   let parentStageConfig = null;
@@ -90,7 +94,7 @@ export default function CardDetail({ card, project, dispatch, model = 'gpt-5.5' 
         <div className="flex gap-2 flex-wrap items-center text-xs text-gray-400 mb-2">
           <span>{card.type.replace(/_/g, ' ')}</span>
           <span>·</span>
-          <span>{stageConfig.label}</span>
+          <span>{stageConfig?.label ?? `(legacy: ${card.stageId})`}</span>
           <span>·</span>
           <span>#{card.number}</span>
           {card.model && <><span>·</span><span className="text-violet-400 font-mono">{card.model}</span></>}

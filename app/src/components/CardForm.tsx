@@ -33,11 +33,14 @@ interface CardFormProps {
 }
 
 export default function CardForm({ card, parentId, stageId, project, onSave, onCancel }: CardFormProps) {
-  const currentStageConfig = STAGES.find((s) => s.id === stageId)!;
+  // Defensive: stageId может быть legacy (validation, definition и т.п.) — не падаем.
+  // expectedCardType берём из существующей карточки если есть, иначе делаем разумный fallback.
+  const currentStageConfig = STAGES.find((s) => s.id === stageId);
+  const fallbackCardType: CardType = (card?.type ?? currentStageConfig?.expectedCardType ?? 'observation_item') as CardType;
   const isEdit = !!card;
 
   const [title, setTitle] = useState(card?.title ?? '');
-  const [type, setType] = useState<CardType>(card?.type ?? currentStageConfig.expectedCardType);
+  const [type, setType] = useState<CardType>(fallbackCardType);
   const [selectedStageId, setSelectedStageId] = useState<StageId>(card?.stageId ?? stageId);
   const [description, setDescription] = useState(card?.description ?? '');
   const [tagsInput, setTagsInput] = useState(card?.tags.join(', ') ?? '');

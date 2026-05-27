@@ -1,5 +1,5 @@
 export type StageId =
-  // — Module 01: Entity / Reality Mapping (9 sub-modules) —
+  // — Module 01: Entity / Reality Mapping (8 sub-modules) —
   | 'observation_scan'
   | 'search_scan'
   | 'fundamental_dimensions'
@@ -8,19 +8,41 @@ export type StageId =
   | 'users_actors'
   | 'substitutes'
   | 'boundary_cases'
-  // — Module 02: Feature Challenge (2 sub-modules) —
-  | 'feature_challenge'        // 2.1 — атака случайных признаков (variants)
-  | 'obligatory_reframing'     // 2.2 — радикальное переопределение через обязательные признаки
-  // — Module 03+: остальные (переработаются позже) —
+  // — Module 02: Feature Challenge —
+  | 'feature_challenge'        // v1: 2.1 атака случайных признаков (variants). В v2 НЕ в auto-all, только manual.
+  | 'obligatory_reframing'     // v1: 2.2 радикальное переопределение. В v2 НЕ в auto-all, только manual.
+  | 'creative_exploration'     // v2 only: 2.1 игровая разведка со всеми кирпичиками (вместо v1 2.1+2.2)
+  // — Module 03+ —
   | 'friction' | 'contradiction'
   | 'cross_field' | 'opportunity' | 'hypothesis' | 'critic'
   | 'shortlist' | 'validation';
+
+/**
+ * Версия методологии (выбирается при создании проекта).
+ *
+ * - functional_v1: исходный жёсткий функциональный режим. Pain-frame первичен.
+ *   Module 02: 2.1 Feature Challenge + 2.2 Obligatory Reframing.
+ *   Required-структуры полей, конкретные функциональные слова (смета, доплата),
+ *   pain-driven lens во всех стейджах.
+ *   Для старых проектов созданных до 2026-05-28.
+ *
+ * - functional_v2: smooth, opportunity-first. POLARITY FLIP — смотрим из будущего.
+ *   Module 02: один стейдж 2.1 Creative Exploration (игровая разведка с радикал-линзой).
+ *   Softened structures (ориентиры вместо required), без функционал-специфичных слов,
+ *   opportunity-frame во всех стейджах.
+ *   Default для новых проектов.
+ *
+ * - creative: будущий креативный режим (отдельный pipeline, в работе).
+ *   Magnet / aesthetic / ritual / identity вместо аналитики болей.
+ */
+export type MethodologyMode = 'functional_v1' | 'functional_v2' | 'creative';
 
 export type CardType =
   | 'observation_item' | 'search_finding'
   | 'dimension' | 'obligatory_feature' | 'accidental_feature'
   | 'job' | 'actor' | 'substitute' | 'boundary_case'
   | 'transformation_handle' | 'radical_reframe'
+  | 'creative_idea'  // для v2 stage 2.1 Creative Exploration
   | 'friction_point' | 'contradiction' | 'cross_field_analogy'
   | 'opportunity_branch' | 'hypothesis' | 'critique' | 'validation_test';
 
@@ -95,6 +117,12 @@ export interface Project {
   selectedCardId: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Версия методологии (выбирается при создании проекта).
+   * Optional для legacy данных — migration выставляет 'functional_v1' старым проектам.
+   * См. MethodologyMode выше для деталей.
+   */
+  methodologyMode?: MethodologyMode;
 }
 
 export interface AppState {

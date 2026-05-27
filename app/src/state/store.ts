@@ -50,6 +50,14 @@ function migrate(state: AppState): AppState {
       (project as any).activeStageId = 'shortlist';
       mutated = true;
     }
+    // 2026-05-28: введён versioning методологии. Старые проекты получают
+    // functional_v1 (текущий жёсткий режим). Новые проекты создаются явно
+    // с указанием methodologyMode (default functional_v2 для новых).
+    // Это safety net — если methodologyMode undefined → старый проект → v1.
+    if (!project.methodologyMode) {
+      (project as any).methodologyMode = 'functional_v1';
+      mutated = true;
+    }
   }
   if (mutated) {
     // Сохраним мигрированный state обратно (в фоне)

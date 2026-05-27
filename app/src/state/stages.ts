@@ -1,4 +1,4 @@
-import type { StageId, CardType } from './types';
+import type { StageId, CardType, MethodologyMode } from './types';
 
 /** Модуль = группа под-модулей в левой колонке. */
 export interface ModuleConfig {
@@ -25,6 +25,13 @@ export interface StageConfig {
   moduleId: string;
   /** Под-модуль использует web search вместо обычной генерации. */
   usesWebSearch?: boolean;
+  /**
+   * Видимость стейджа по версии методологии. Если не указано — стейдж виден во ВСЕХ версиях.
+   * Используется чтобы скрывать v2-only стейджи (creative_exploration) в v1-проектах
+   * и наоборот скрывать v1-only стейджи (feature_challenge, obligatory_reframing) в v2-проектах
+   * — но только в auto-all и левой колонке. Legacy-карточки остаются в проекте.
+   */
+  availableInModes?: MethodologyMode[];
   /** Цветовая палитра. */
   bg: string;
   border: string;
@@ -43,8 +50,11 @@ export const STAGES: StageConfig[] = [
   { id: 'boundary_cases',          label: '1.8 Boundary Cases',           expectedCardType: 'boundary_case',     order: 8,  moduleId: 'reality_mapping', bg: 'bg-teal-50',   border: 'border-teal-400',   text: 'text-teal-700'   },
 
   // ───────── Module 02: Feature Challenge ─────────
-  { id: 'feature_challenge',       label: '2.1 Feature Challenge (Variants)',     expectedCardType: 'transformation_handle', order: 9,  moduleId: 'feature_challenge', bg: 'bg-violet-50',  border: 'border-violet-400', text: 'text-violet-700' },
-  { id: 'obligatory_reframing',    label: '2.2 Obligatory Reframing (Radical)',   expectedCardType: 'radical_reframe',       order: 10, moduleId: 'feature_challenge', bg: 'bg-purple-50',  border: 'border-purple-500', text: 'text-purple-800' },
+  // v1: два стейджа (2.1 Feature Challenge + 2.2 Obligatory Reframing)
+  // v2: один стейдж (2.1 Creative Exploration с игровыми линзами и радикал-линзой внутри)
+  { id: 'feature_challenge',       label: '2.1 Feature Challenge (Variants)',     expectedCardType: 'transformation_handle', order: 9,  moduleId: 'feature_challenge', availableInModes: ['functional_v1'], bg: 'bg-violet-50',  border: 'border-violet-400', text: 'text-violet-700' },
+  { id: 'obligatory_reframing',    label: '2.2 Obligatory Reframing (Radical)',   expectedCardType: 'radical_reframe',       order: 10, moduleId: 'feature_challenge', availableInModes: ['functional_v1'], bg: 'bg-purple-50',  border: 'border-purple-500', text: 'text-purple-800' },
+  { id: 'creative_exploration',    label: '2.1 Creative Exploration',             expectedCardType: 'creative_idea',         order: 9,  moduleId: 'feature_challenge', availableInModes: ['functional_v2', 'creative'], bg: 'bg-violet-50',  border: 'border-violet-400', text: 'text-violet-700' },
 
   // ───────── Module 03: Diagnosis (2 sub-modules) ─────────
   { id: 'friction',                label: '3.1 Карта трений',             expectedCardType: 'friction_point',      order: 11, moduleId: 'friction_opportunity', bg: 'bg-orange-50',  border: 'border-orange-400', text: 'text-orange-700' },
@@ -64,3 +74,16 @@ export const STAGES: StageConfig[] = [
 
 /** Первый stage первого модуля — куда переключаемся при миграции/новом проекте. */
 export const FIRST_STAGE_ID: StageId = 'observation_scan';
+
+/**
+ * Возвращает список стейджей видимых в данной версии методологии.
+ * Стейджи без явного availableInModes видны во ВСЕХ режимах.
+ * Сортировка по order сохраняется.
+ *
+ * Использовать в:
+ * - StagesColumn (левая колонка — какие стейджи показывать)
+ * - Workbench.handleAutoGenerateAll (по каким итерироваться)
+ */
+export function getStagesForMode(mode: MethodologyMode): StageConfig[] {
+  return STAGES.filter((s) => !s.availableInModes || s.availableInModes.includes(mode));
+}

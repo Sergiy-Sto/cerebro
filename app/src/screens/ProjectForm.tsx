@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import type { Project } from '../state/types';
+import type { Project, MethodologyMode } from '../state/types';
 
 interface ProjectFormData {
   title: string;
   frame: string;
   constraints: string[];
   criteria: string[];
+  methodologyMode: MethodologyMode;
 }
 
 interface ProjectFormProps {
@@ -22,6 +23,10 @@ export default function ProjectForm({ project, onSave, onCancel }: ProjectFormPr
   const [constraintInput, setConstraintInput] = useState('');
   const [criterionInput, setCriterionInput] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
+  // Версия методологии — выбирается ТОЛЬКО при создании, не редактируется
+  const [methodologyMode, setMethodologyMode] = useState<MethodologyMode>(
+    project?.methodologyMode ?? 'functional_v2'
+  );
 
   const isEdit = !!project;
 
@@ -35,7 +40,7 @@ export default function ProjectForm({ project, onSave, onCancel }: ProjectFormPr
 
   function handleSubmit() {
     if (!validate()) return;
-    onSave({ title: title.trim(), frame: frame.trim(), constraints, criteria });
+    onSave({ title: title.trim(), frame: frame.trim(), constraints, criteria, methodologyMode });
   }
 
   function addConstraint() {
@@ -168,6 +173,48 @@ export default function ProjectForm({ project, onSave, onCancel }: ProjectFormPr
             </ul>
           )}
         </div>
+
+        {/* Methodology mode selector — только при создании, не при редактировании */}
+        {!isEdit && (
+          <div className="mb-5 p-3 bg-blue-50 border border-blue-200">
+            <label className="block text-xs font-semibold text-gray-700 mb-2">Режим методологии</label>
+            <div className="space-y-2">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="methodologyMode"
+                  value="functional_v2"
+                  checked={methodologyMode === 'functional_v2'}
+                  onChange={() => setMethodologyMode('functional_v2')}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-gray-900">Функциональный v2 (рекомендуется)</div>
+                  <div className="text-xs text-gray-600 mt-0.5">
+                    Сглаженная методология, opportunity-frame, мягкая структура. Module 02 = единый блок Creative Exploration с игровыми линзами.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="methodologyMode"
+                  value="functional_v1"
+                  checked={methodologyMode === 'functional_v1'}
+                  onChange={() => setMethodologyMode('functional_v1')}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-gray-900">Функциональный v1 (legacy)</div>
+                  <div className="text-xs text-gray-600 mt-0.5">
+                    Исходная жёсткая методология. Pain-frame первичен, обязательные поля, специфичные функциональные слова. Module 02 = 2.1 Feature Challenge + 2.2 Obligatory Reframing.
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2 justify-end">
           <button

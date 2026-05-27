@@ -1,5 +1,5 @@
 import { useState, type Dispatch } from 'react';
-import type { AppState, Project } from '../state/types';
+import type { AppState, MethodologyMode, Project } from '../state/types';
 import type { StoreAction } from '../state/store';
 import { newId } from '../utils/id';
 import { FIRST_STAGE_ID } from '../state/stages';
@@ -17,7 +17,7 @@ export default function ProjectPicker({ state, dispatch }: ProjectPickerProps) {
 
   const { projects } = state;
 
-  function handleCreate(data: { title: string; frame: string; constraints: string[]; criteria: string[] }) {
+  function handleCreate(data: { title: string; frame: string; constraints: string[]; criteria: string[]; methodologyMode: MethodologyMode }) {
     const now = new Date().toISOString();
     const project: Project = {
       id: newId(),
@@ -30,6 +30,7 @@ export default function ProjectPicker({ state, dispatch }: ProjectPickerProps) {
       selectedCardId: null,
       createdAt: now,
       updatedAt: now,
+      methodologyMode: data.methodologyMode,
     };
     dispatch({ type: 'CREATE_PROJECT', payload: project });
     setShowNewForm(false);

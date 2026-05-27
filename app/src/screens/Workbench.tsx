@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, type Dispatch, type ChangeEvent } from 're
 import type { Project, Card, StageId } from '../state/types';
 import type { StoreAction } from '../state/store';
 import { getCard, cardsByStage, getContextCardsForStage } from '../state/selectors';
-import { STAGES, FIRST_STAGE_ID } from '../state/stages';
+import { STAGES, FIRST_STAGE_ID, getStagesForMode } from '../state/stages';
 import { downloadJson } from '../utils/download';
 import { newId } from '../utils/id';
 import { getApiKey, generateCardsStream, generateWithSearchStream } from '../utils/openai';
@@ -121,11 +121,17 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     // 4.4 и 4.5 остаются доступны вручную через CardsColumn "Генерировать".
     const STOP_AUTO_AFTER_STAGE: StageId | null = 'hypothesis';
 
+    // Стейджи отфильтрованные под версию методологии проекта.
+    // v1 — старый набор (с 2.1/2.2 Feature Challenge + Reframe).
+    // v2 — без 2.1/2.2 v1, вместо них 2.1 Creative Exploration.
+    const projectMode = baseProject.methodologyMode ?? 'functional_v1';
+    const stagesForMode = getStagesForMode(projectMode);
+
     try {
-      for (let i = 0; i < STAGES.length; i++) {
+      for (let i = 0; i < stagesForMode.length; i++) {
         // Если на паузе — ждём пока снимут, проверяя каждые 250мс. Стоп — выход.
         while (pauseRef.current && !stopRef.current) {
-          setAutoGenProgress(`⏸ Пауза на ${i + 1}/${STAGES.length}: ${STAGES[i].label}`);
+          setAutoGenProgress(`⏸ Пауза на ${i + 1}/${stagesForMode.length}: ${stagesForMode[i].label}`);
           await new Promise((r) => setTimeout(r, 250));
         }
         if (stopRef.current) break;
@@ -133,7 +139,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
         // Сбросим skip-флаг перед каждым стейджем (если предыдущий был skipped)
         skipCurrentRef.current = false;
 
-        const stage = STAGES[i];
+        const stage = stagesForMode[i];
 
         // Skip stages that already had cards in the snapshot OR were generated this run
         const alreadyHas =
@@ -141,7 +147,7 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
           generatedCards.some(c => c.stageId === stage.id);
         if (alreadyHas) continue;
 
-        setAutoGenProgress(`${i + 1} / ${STAGES.length}: ${stage.label}${stage.usesWebSearch ? ' (🌐 поиск)' : ''}`);
+        setAutoGenProgress(`${i + 1} / ${stagesForMode.length}: ${stage.label}${stage.usesWebSearch ? ' (🌐 поиск)' : ''}`);
         dispatch({ type: 'SET_ACTIVE_STAGE', payload: { stageId: stage.id } });
 
         // Контекст с применением правил:
@@ -279,11 +285,15 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
     dispatch({ type: 'SET_ACTIVE_PROJECT', payload: { id: '' } });
   }
 
-  function handleSaveProject(data: { title: string; frame: string; constraints: string[]; criteria: string[] }) {
+  function handleSaveProject(data: { title: string; frame: string; constraints: string[]; criteria: string[]; methodologyMode: import('../state/types').MethodologyMode }) {
     const now = new Date().toISOString();
+    // При редактировании methodologyMode не меняется — берём с существующего проекта.
+    // Mode выбирается ТОЛЬКО при создании.
+    const { methodologyMode: _ignored, ...editableData } = data;
+    void _ignored;
     dispatch({
       type: 'UPDATE_PROJECT',
-      payload: { ...project, ...data, updatedAt: now },
+      payload: { ...project, ...editableData, updatedAt: now },
     });
     setShowEditProject(false);
   }
@@ -336,8 +346,10 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
             <option value="gpt-4.1">gpt-4.1 (legacy)</option>
           </select>
           {!isAutoGenerating ? (() => {
-            const filledStages = STAGES.filter(s => cardsByStage(project, s.id).length > 0).length;
-            const allFilled = filledStages === STAGES.length;
+            // Считаем заполненные стейджи только из активного набора (по версии методологии)
+            const stagesForThisMode = getStagesForMode(project.methodologyMode ?? 'functional_v1');
+            const filledStages = stagesForThisMode.filter(s => cardsByStage(project, s.id).length > 0).length;
+            const allFilled = filledStages === stagesForThisMode.length;
             const noneFilled = filledStages === 0;
             const hasAnyCards = filledStages > 0;
 
@@ -349,11 +361,11 @@ export default function Workbench({ project, dispatch }: WorkbenchProps) {
               tooltip = 'Сгенерировать все этапы по цепочке';
             } else if (allFilled) {
               label = '✓ Все этапы готовы';
-              tooltip = 'Все 18 этапов заполнены. Для пересборки используй красную кнопку «Очистить и заново».';
+              tooltip = `Все ${stagesForThisMode.length} этапов заполнены. Для пересборки используй красную кнопку «Очистить и заново».`;
               mainDisabled = true;
             } else {
               label = '▶ Продолжить генерацию';
-              tooltip = `Заполнено ${filledStages}/${STAGES.length} этапов. Auto-all пропустит готовые, сгенерирует только пустые. Данные не пострадают.`;
+              tooltip = `Заполнено ${filledStages}/${stagesForThisMode.length} этапов. Auto-all пропустит готовые, сгенерирует только пустые. Данные не пострадают.`;
             }
 
             return (

@@ -1,6 +1,6 @@
 import { useState, useEffect, type Dispatch } from 'react';
 import type { Project, StageId } from '../state/types';
-import { STAGES, MODULES } from '../state/stages';
+import { STAGES, MODULES, getStagesForMode } from '../state/stages';
 import { stageStatus, statsForStage } from '../state/selectors';
 import type { StoreAction } from '../state/store';
 
@@ -28,7 +28,15 @@ function statusIconColor(status: ReturnType<typeof stageStatus>): string {
 }
 
 export default function StagesColumn({ project, dispatch }: StagesColumnProps) {
-  // Найдём modyle активного stage — он раскрыт по умолчанию
+  // Стейджи отфильтрованные под версию методологии проекта.
+  // v1 видит старые 2.1 Feature Challenge + 2.2 Obligatory Reframing.
+  // v2 видит новый 2.1 Creative Exploration.
+  const projectMode = project.methodologyMode ?? 'functional_v1';
+  const visibleStages = getStagesForMode(projectMode);
+
+  // Найдём модуль активного stage — он раскрыт по умолчанию.
+  // Активный stage ищем во ВСЕХ STAGES (включая невидимые), потому что в проекте могут
+  // лежать legacy-карточки с stageId не из текущего mode — нужно их показать если selected.
   const activeStage = STAGES.find((s) => s.id === project.activeStageId);
   const activeModuleId = activeStage?.moduleId ?? MODULES[0].id;
 
@@ -63,7 +71,8 @@ export default function StagesColumn({ project, dispatch }: StagesColumnProps) {
       </div>
       <ul className="flex-1">
         {MODULES.map((module) => {
-          const moduleStages = STAGES.filter((s) => s.moduleId === module.id);
+          // Только стейджи активной версии методологии
+          const moduleStages = visibleStages.filter((s) => s.moduleId === module.id);
           if (moduleStages.length === 0) return null;
 
           const isExpanded = expandedModules.has(module.id);

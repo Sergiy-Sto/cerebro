@@ -93,11 +93,11 @@
     <div class="status-grid">
       <div class="status-card">
         <div class="status-label">Фаза</div>
-        <div class="status-value">Opportunity Lens v1 (функциональный режим)</div>
+        <div class="status-value">Solidified functional_v1, проектируем functional_v2 (полярная перестройка)</div>
       </div>
       <div class="status-card">
         <div class="status-label">Следующий шаг</div>
-        <div class="status-value">Прогнать Кофейню заново на Opportunity Lens, сравнить шортлист с предыдущим (плоско-операционным)</div>
+        <div class="status-value">1) Versioning архитектура (functional_v1 / v2 / creative с выбором на старте проекта). 2) Затем все правки v2.</div>
       </div>
       <div class="status-card">
         <div class="status-label">Прод</div>
@@ -245,6 +245,166 @@
     <div class="section-header">
       <div class="section-icon" style="background:#f5f3ff;">🧠</div>
       <h2>История решений</h2>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · Архитектурный поворот — versioning + полярная перестройка для v2</div>
+      <div class="decision-title">🔀 Решено: methodology versioning (functional_v1 / functional_v2 / creative) + полярная перестройка от pain → opportunity для v2</div>
+      <div class="decision-why">
+        <strong>Контекст:</strong> на ночной сессии 26-27.05 после прогона Кофейни v2 на новых промптах (Opportunity Lens, anti-padding, размягчение required-структур) пользователь дал обширный feedback. Главный вывод: проблема глубже чем "недостаточно opportunity-инструкций" — <em>методология структурно зажата в pain-frame</em> на уровне самих стейджей, не только output.<br>
+
+        <strong>Архитектурное решение:</strong> вводим <strong>versioning methodology</strong> через <code>project.methodologyMode</code>:
+        <ul>
+          <li><strong>functional_v1</strong> — старый жёсткий функциональный (все текущие проекты автомиграцией). Промпты пин-наг конкретные слова (смета, доплата, мастер), required-структура, pain-первое.</li>
+          <li><strong>functional_v2</strong> — то что проектируем. Smooth, opportunity-first polarity, размягчённая структура, без функционал-специфичных слов. Это <em>не</em> "v1 + opportunity бонусом", это <em>другой угол зрения</em>.</li>
+          <li><strong>creative</strong> — отдельный pipeline (будущее). Магнит / эстетика / ритуал / идентичность — не аналитика болей вообще.</li>
+        </ul>
+        Выбор режима — модалка при создании проекта. Старые проекты → v1 через migration. Новые проекты по умолчанию → v2.<br>
+
+        <strong>Главный концептуальный сдвиг для v2 — POLARITY FLIP:</strong>
+        v2 смотрит <em>из будущего</em> (какие возможности открываются), не <em>из прошлого</em> (где сломалось). Это значит переписать lens во многих стейджах:
+        <ul>
+          <li><strong>1.5 JTBD</strong>: "какую боль / задачу решает" → "какую возможность для клиента создаёт"</li>
+          <li><strong>1.6 Users</strong>: "чего боится / где конфликтует" → "что хочет создать / что мог бы получить"</li>
+          <li><strong>1.7 Substitutes</strong>: "почему уходит к замене" (pain-driven) → "что выбирает и почему это интересный сигнал"</li>
+          <li><strong>3.1 Friction Map</strong>: переименовать в "Карта напряжений и возможностей" — WHY становится "что становится возможно если разрешить", а не "что теряется"</li>
+        </ul>
+
+        <strong>Также для v2 — точечные правки:</strong>
+        <ul>
+          <li>Убрать Missing Angles Check из FMT_RULES (пустой блок)</li>
+          <li>Маркеры [типовой паттерн] переместить в конец абзаца — сейчас разбивают мысль</li>
+          <li>Убрать SELF-CHECK из FMT_RULES_METRICS — бесполезен в одном вызове, как пользователь подметил</li>
+          <li>Размягчить или убрать "Конкретика вместо абстракции" функциональные слова — даёт функционал-вайб, неуместно в v2</li>
+          <li>1.1 Устаревшие форматы — из обязательной линзы в опциональную</li>
+          <li>Search Scan (1.2) — добавить obligatory лензу "Существующие необычные форматы / новаторские подходы" рядом с "Реальные проблемы"</li>
+          <li>2.1 Feature Challenge — переориентация с pain-вопросов ("убрать / инвертировать") на creative-explore: "какая может быть другая форма / неожиданный материал / неожиданное исполнение / роль / аудитория / сценарий". Пользователь дал готовые ориентиры (см. транскрипт).</li>
+        </ul>
+
+        <strong>Открытые вопросы для следующей сессии:</strong>
+        <ul>
+          <li><strong>1.7 + 1.8 merge?</strong> Два прохода (v1 fix → v2 refine структуры) показали что разграничение промптами не держится. Время идти к merge в один блок "Alternatives &amp; Category Edges". Это упрощение, нужно подтвердить с пользователем перед слиянием.</li>
+          <li><strong>Сокращение этапов 2.1 + 2.2 + 4.3?</strong> Пользователь заметил: "после декомпозиции сразу можно фантазировать". Если 2.1 становится creative-explore + 2.2 = reframe + 4.3 = композиция → потенциально 2.1 и 2.2 можно слить. Это уже шаг к Creative mode.</li>
+        </ul>
+
+        <strong>Что НЕ делаем:</strong>
+        <ul>
+          <li>External critic POC (отложен) — пользователь верно заметил: пока гипотезы слабые, нечего критиковать. Реализуем когда v2 даст содержательный output.</li>
+        </ul>
+
+        <strong>План следующей сессии:</strong>
+        <ol>
+          <li>Versioning архитектура — types, project.methodologyMode, modal на старте, migration, разделение STAGE_PROMPTS</li>
+          <li>Перенос текущих промптов в STAGE_PROMPTS_V1 (без изменений — это safety net)</li>
+          <li>Создание STAGE_PROMPTS_V2 с полярной перестройкой + точечными правками</li>
+          <li>Решение по 1.7+1.8 merge</li>
+          <li>Тест v2 на новой теме (трекер сна?) — сравнить с прошлыми прогонами</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · Auto-all останавливается после 4.3</div>
+      <div class="decision-title">🛑 Auto-all stop after 4.3 Hypothesis — критика и шортлист пока вручную</div>
+      <div class="decision-why">
+        <strong>Идея пользователя:</strong> пока методология не научится производить содержательные гипотезы, критика (4.4) и шортлист (4.5) — пустая трата токенов. Нечего критиковать = подключать external critic тоже бессмысленно.<br>
+        <strong>Реализация:</strong> <code>STOP_AUTO_AFTER_STAGE = 'hypothesis'</code> в <code>Workbench.handleAutoGenerateAll</code>. Auto-all завершается после 4.3 с сообщением "✓ Авто-генерация остановлена". 4.4/4.5 остаются доступны вручную через CardsColumn "Генерировать".<br>
+        <strong>Снятие:</strong> поменять флаг на <code>null</code> когда гипотезы достигнут качества для критики.<br>
+        <strong>Экономия:</strong> ~$1.0-1.5 за прогон. При итеративных тестах методологии — больше прогонов за тот же бюджет.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · Anti-padding два слоя</div>
+      <div class="decision-title">🚫 Anti-padding: убраны минимумы из квот + размягчены required-структуры полей</div>
+      <div class="decision-why">
+        <strong>Главный мета-вывод (зафиксировать для всех будущих итераций):</strong>
+        <em>"Структура output должна возникать из содержания, а не навязываться сверху. Когда промпт говорит 'обязательно укажи X, Y, Z' — модель тратит токены на заполнение, не на мышление. Хороший промпт даёт направление и свободу, а не шаблон."</em><br>
+
+        <strong>Слой 1 — убраны нижние границы квот по всем стейджам:</strong>
+        <ul>
+          <li>1.4: "5-8/7-12" → "до 8 / до 12, потолки не минимумы"</li>
+          <li>2.1: "6-10 challenges" → "до 10, минимума нет"</li>
+          <li>2.2: "4-6 идей" → "до 6, лучше 2 сильных"</li>
+          <li>3.1: "8-15 frictions" → "до 15, &lt;3 — валидное наблюдение"</li>
+          <li>3.2: "3-5 tensions" → "0-5, ноль валиден"</li>
+          <li>4.2: "5-8 spaces" → "до 8 + явный ANTI-PADDING блок"</li>
+          <li>4.3: "3-7 гипотез" → "до 7, лучше 2 сильных"</li>
+          <li>4.5: "3-5 шортлист" → "до 5, можно 2"</li>
+        </ul>
+        FMT_RULES Rule 2 переписан с конкретными анти-паттернами: перечисления без инсайта, тавтологии, 80% [типовой паттерн], парафраз чужого пункта.<br>
+
+        <strong>Слой 2 — размягчены required-структуры полей на 8 стейджах:</strong>
+        Required "Для каждой карточки: A, B, C, D, E" → "Опиши свободно. Ориентиры что может быть полезно если применимо."
+        Затронуты: 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 3.1, 4.1, 4.3. Главная правка — 4.3 Hypothesis: было 9 обязательных секций, теперь обязательны только 2 которые делают гипотезу falsifiable ("Возможное поведение клиента" + "Что опровергнет").<br>
+
+        <strong>НЕ тронуто (структура осмысленно жёсткая):</strong> 1.7/1.8 (мандатные строки разграничения), 3.2 (9 вопросов anti-выдумывание), 4.4/4.5 (двухосевая структура anti-blandness).<br>
+
+        <strong>Следующая итерация (functional_v2):</strong> сделать то же самое НО глубже — изменить не только структуру output, но и сам lens вопросов (polarity flip).
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · 4.4 Critic фикс скоупа</div>
+      <div class="decision-title">🎯 4.4 Critic: 1 карточка = 1 гипотеза, критикуем только 4.3 hypotheses</div>
+      <div class="decision-why">
+        <strong>Симптом:</strong> на Кофейне 02 в 4.3 было 6 гипотез, в 4.4 Critic — 19 карточек. Часть критик была на opportunity-branches из 4.2 ("меню по ситуациям", "честная цена за растительное молоко" — этих гипотез в 4.3 не было).<br>
+        <strong>Причина:</strong> промпт не закреплял "критикуй ТОЛЬКО гипотезы 4.3" + "1 карточка = 1 гипотеза". Модель брала всё что выглядит как proto-гипотеза.<br>
+        <strong>Фикс:</strong> добавлен блок "🔴 ЖЁСТКИЕ ОГРАНИЧЕНИЯ" в начало промпта:
+        <ol>
+          <li>Критикуем ТОЛЬКО type=hypothesis из 4.3</li>
+          <li>1 карточка = 1 гипотеза (все оси A+B и риски ВНУТРИ одной карточки)</li>
+          <li>N карточек критики = N гипотез из 4.3</li>
+          <li>derived_from обязателен на одну гипотезу</li>
+        </ol>
+        <strong>Общий принцип:</strong> "каждый критикующий стейдж имеет ровно столько карточек сколько входов. N→N. Никаких bonus-карточек, никакого расщепления одной критики на несколько по осям". Применяется и к будущему external critic POC.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · Дедуп + удалена 4.6 Validation</div>
+      <div class="decision-title">🔁 Number-collision-proof reducer + 4.6 Validation удалена (заменена on-demand кнопкой)</div>
+      <div class="decision-why">
+        <strong>Дедуп карточек:</strong> на прогоне Кофейни были #1 #1 (collision номеров) и точные дубли (NBSP, кривые тире проскакивали через exact-match дедуп).
+        <ul>
+          <li>Number теперь вычисляется в reducer при записи (stageMaxNum + 1), не из локального счётчика. Защита от race condition.</li>
+          <li>Усиленная нормализация title для дедупа: NBSP → пробел, длинные тире → дефис, кривые кавычки → стандартные, хвостовая пунктуация убирается.</li>
+          <li>existingBlock в промптах усилен — явные паттерны что считается дублем.</li>
+        </ul>
+
+        <strong>4.6 Validation удалён как обязательный stage</strong> (по идее пользователя):
+        <ul>
+          <li>Раньше: один вызов генерил тесты для ВСЕХ 5-7 шортлист-гипотез ($0.25-0.83 за прогон)</li>
+          <li>Теперь: кнопка "🧪 План валидации" на карточках 4.3/4.5 + новая функция <code>generateValidationPlanForHypothesisStream()</code> в openai.ts + ValidationPlanModal.tsx с авто-стартом</li>
+          <li>Один план ~$0.05-0.15 (в 5-10× дешевле при типичном использовании когда тестируем 1-2 гипотезы)</li>
+          <li>StageId 'validation' и CardType 'validation_test' оставлены для legacy. Migration в store.ts: если activeStageId === 'validation' → switch на 'shortlist'.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · FTP deploy починен</div>
+      <div class="decision-title">🚢 FTP deploy починен — корень был в TS build failure (silent)</div>
+      <div class="decision-why">
+        <strong>Симптом:</strong> 4-5 коммитов подряд GitHub Actions показывал "completed", но Hostinger файлы не обновлялись с 20:01 GMT. Бандл застрял на старом ?v=1779825708706. Хотфикс белого экрана не докатывался.<br>
+        <strong>Корневая причина (найдена через gh CLI):</strong> Actions builds фейлились на TS errors (<code>'stageConfig' is possibly 'undefined'</code> внутри handleGenerate callback'а). Локальный <code>npx tsc --noEmit</code> пропускал, Actions <code>tsc -b</code> ловил. FTP-step не запускался при failed build.<br>
+        <strong>Проверки моих ошибок:</strong> WebFetch на страницу Actions неправильно прочитал статусы (показывал "success" хотя был "failure"). Не доверять WebFetch для статусов CI, использовать <code>gh run view --log</code>.<br>
+        <strong>Урок на будущее:</strong> для верификации build локально использовать <code>npm run build</code> (та же команда что в Actions), не <code>npx tsc --noEmit</code> — они дают разные результаты в project-references mode.<br>
+        <strong>Фикс:</strong> TypeScript narrowing внутри callback решён через локальную const sc = stageConfig после early-return null-check.
+      </div>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-05-27 · Permission-промпты закрыты</div>
+      <div class="decision-title">🔓 Permission-промпты закрыты системно — defaultMode: "bypassPermissions" + поведенческие гарды</div>
+      <div class="decision-why">
+        <strong>Контекст:</strong> промпты прерывали работу на каждой нетривиальной команде (curl с $(date), until-loops, составные shell-конструкции). Известный баг <a href="https://github.com/anthropics/claude-code/issues/29529">#29529</a> — Bash(curl *) не матчится надёжно.<br>
+        <strong>Решение:</strong> в .claude/settings.json — <code>defaultMode: "bypassPermissions"</code> + permissions.deny с явно опасным (rm -rf /*, rm -rf ~*, git push --force, curl ... | sh).<br>
+        <strong>Безопасность теперь:</strong> не на технических ограничениях Claude Code, а на behavioral guards в CLAUDE.md (Правило 12). Это единственная защита под bypassPermissions.<br>
+        <strong>Активация:</strong> только при старте новой сессии (settings.json грузится при старте). Текущая беседа продолжает на старых настройках до закрытия.<br>
+        <strong>Портативный гайд:</strong> создан <code>CLAUDE-PERMISSIONS-SETUP.md</code> в корне — для копирования в другие проекты целиком.<br>
+        <strong>Подтверждение работы:</strong> в новом chat юзер запустил тестовую команду "Сделай каждые 2 секунды проверяй..." — модель выполнила until-loop команду без единого промпта.
+      </div>
     </div>
 
     <div class="decision important">

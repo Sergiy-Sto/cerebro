@@ -81,7 +81,21 @@
   <div class="subtitle">Creative Core Workbench · Живое состояние проекта · Обновляется каждую сессию</div>
 
   <div class="alert">
-    <strong>Для Claude:</strong> Это единственное место где хранится живое состояние. Читать в начале каждой сессии. После сессии — обновить «Текущее состояние», «Открытые задачи» и добавить запись в «Историю решений».
+    <strong>Для Claude:</strong> Живое состояние и история WHY — здесь. <strong>Открытые задачи живут в <code>TODO.md</code></strong>, в Журнале их нет. Правила работы → <code>CLAUDE.md</code>. Видение/архитектура проекта → <code>ПРОЕКТ.md</code>. Карта системы хуков → <code>АРХИТЕКТУРА.md</code>. Читать в начале каждой сессии (ЖУРНАЛ + ПРОЕКТ + TODO). В конце сессии — обновить блок 📍 ПЕРЕДАЧА (через <code>/journal</code>) и добавить запись в «Историю решений» по горячим следам.
+  </div>
+
+  <!-- 📍 ПЕРЕДАЧА — мини-ТЗ для следующей сессии (перезаписывается через /journal) -->
+  <div class="section" style="border:2px solid #3b82f6; background:#eff6ff;">
+    <div class="section-header" style="border-bottom-color:#bfdbfe;">
+      <div class="section-icon" style="background:#3b82f6; color:#fff;">📍</div>
+      <h2 style="color:#1e3a8a;">ПЕРЕДАЧА — старт следующей сессии</h2>
+    </div>
+    <p style="font-size:13px; color:#1e40af; margin-bottom:10px;">Перезаписывается в конце каждой сессии командой <code>/journal</code>. Мини-ТЗ — 3–7 строк.</p>
+    <ul style="padding-left:20px; font-size:14px; line-height:1.7;">
+      <li><strong>Где остановились:</strong> 2026-06-14 применили claude-kit-starter (новая архитектура хуков/команд/правил). Старый CLAUDE.md заменён, добавлены TODO.md / АРХИТЕКТУРА.md / УСТАНОВКА.md / .claude/hooks/ / .claude/commands/ / scripts/.</li>
+      <li><strong>Что первым:</strong> в новой сессии выполни самотест хуков (из CLAUDE.md шаг 5): <code>rm -rf /несуществующая-папка-тест</code> → должно быть «ЗАБЛОКИРОВАНО ХУКОМ». Если нет — хуки не подцепились, чини. Затем по очереди из TODO.md: прогон новой темы через functional_v2.</li>
+      <li><strong>Грабли / нюансы:</strong> Заглавные ПРОЕКТ.md, ЖУРНАЛ.html, TODO.md, CLAUDE.md — обязательны (visual-check exempt list это ждёт). PowerShell 7 установлен у Заказчика (PS 5.1 ломал кириллицу в путях и `@`-символы). Хуки требуют Node.js.</li>
+    </ul>
   </div>
 
   <!-- ТЕКУЩЕЕ СОСТОЯНИЕ -->
@@ -110,68 +124,17 @@
     </div>
   </div>
 
-  <!-- ОТКРЫТЫЕ ЗАДАЧИ -->
-  <div class="section">
+  <!-- ОТКРЫТЫЕ ЗАДАЧИ → переехали в TODO.md (2026-06-14, новая архитектура) -->
+  <div class="section" style="background:#fafafa;">
     <div class="section-header">
       <div class="section-icon" style="background:#fef3c7;">📋</div>
-      <h2>Открытые задачи</h2>
+      <h2>Открытые задачи → <code>TODO.md</code></h2>
     </div>
-
-    <div class="task">
-      <div class="task-badge badge-p0">P0</div>
-      <div class="task-body">
-        <div class="task-title">Создать Vite + React + TS + Tailwind скелет</div>
-        <div class="task-desc">Пустое приложение, убедиться что запускается. Шаг 1 из 12 по ТЗ.</div>
-      </div>
-    </div>
-
-    <div class="task">
-      <div class="task-badge badge-p0">P0</div>
-      <div class="task-body">
-        <div class="task-title">Типы + стейдж-конфиг + store с localStorage sync</div>
-        <div class="task-desc">types.ts, stages.ts, store.ts — без UI. Шаг 2.</div>
-      </div>
-    </div>
-
-    <div class="task">
-      <div class="task-badge badge-p1">P1</div>
-      <div class="task-body">
-        <div class="task-title">Project Picker + Project Form</div>
-        <div class="task-desc">Можно создать / удалить проект. Шаг 3.</div>
-      </div>
-    </div>
-
-    <div class="task">
-      <div class="task-badge badge-p1">P1</div>
-      <div class="task-body">
-        <div class="task-title">Workbench с тремя колонками</div>
-        <div class="task-desc">Статика, рендер этапов, пустой список карточек. Шаг 4.</div>
-      </div>
-    </div>
-
-    <div class="task">
-      <div class="task-badge badge-p1">P1</div>
-      <div class="task-body">
-        <div class="task-title">Add card form → Card detail → Status actions</div>
-        <div class="task-desc">Шаги 5, 6, 7. Карточки появляются, выбираются, меняют статус.</div>
-      </div>
-    </div>
-
-    <div class="task">
-      <div class="task-badge badge-p2">P2</div>
-      <div class="task-body">
-        <div class="task-title">Progression logic + Paste JSON + Create child</div>
-        <div class="task-desc">Шаги 8, 9, 10. Next stage, импорт массива, child-карточки.</div>
-      </div>
-    </div>
-
-    <div class="task">
-      <div class="task-badge badge-p2">P2</div>
-      <div class="task-body">
-        <div class="task-title">Export / Import JSON + Polish</div>
-        <div class="task-desc">Шаги 11, 12. Финальная полировка, acceptance criteria.</div>
-      </div>
-    </div>
+    <p style="font-size:14px; color:#374151;">
+      С 2026-06-14 открытые задачи живут <strong>в файле <code>TODO.md</code> в корне проекта</strong> — единый источник истины для очереди (контролирует Stop-hook <code>todo-drain</code>).
+      В Журнале остаётся <strong>история WHY</strong> и <strong>текущее состояние/статус фич</strong>, открытых задач здесь больше не ведём — иначе разъедется.<br><br>
+      <em>Старые P0/P1/P2 задачи (Vite skeleton, Project Picker, Workbench, Cards/Status, Progression/Paste JSON/Child, Export/Import/Polish) — все закрыты в ранних сессиях. История по ним — ниже, в «Истории решений».</em>
+    </p>
   </div>
 
   <!-- СТАТУС ФИЧ -->
@@ -245,6 +208,32 @@
     <div class="section-header">
       <div class="section-icon" style="background:#f5f3ff;">🧠</div>
       <h2>История решений</h2>
+    </div>
+
+    <div class="decision important">
+      <div class="decision-date">2026-06-14 · Применена claude-kit-starter архитектура — механические гарды поверх дисциплины</div>
+      <div class="decision-title">🛠️ Применён claude-kit-starter (17 правил, 9 хуков, 6 slash-команд, scripts/ самотесты)</div>
+      <div class="decision-why">
+        <strong>Контекст:</strong> в параллельной сессии собрали стартовый kit для всех проектов (Cerebro / Nokki / ScandiWall / OpenClaw). Главная идея — <em>«механизм &gt; намерение»</em>: правила в тексте выцветают за длинную сессию, хук — нет. Дисциплина выносится из «Claude должен помнить» в «среда не даёт нарушить».<br><br>
+
+        <strong>Что изменилось:</strong>
+        <ul>
+          <li><strong>CLAUDE.md</strong> полностью переписан: 12 правил → 17. Добавлены: «Очередь не ждёт» (Правило 8, прицепом к <code>todo-drain</code>), «Одна задача = одна сессия» (16, против авто-compact), «Second Thought Gate» (17, anti-thrash для крупных решений), «Исследование → субагент» (14, для haiku-делегации), «Permission-промпт → стоп» (15, причинная диагностика вместо Allow).</li>
+          <li><strong>TODO.md</strong> — отдельный файл. Раньше открытые задачи лежали в Журнале → дублировались. Теперь правило мнемоники: <em>ЧТО делать сейчас → TODO; ЧТО сделано и ПОЧЕМУ → Журнал; КАК работать → CLAUDE; КАКОЙ проект → ПРОЕКТ; КАК устроен kit → АРХИТЕКТУРА</em>.</li>
+          <li><strong>9 хуков</strong> в <code>.claude/hooks/</code>: PreToolUse (<code>guard-bash</code> — compound-команды и опасное; <code>guard-files</code> — защищённые пути; <code>guard-subagent</code> — дисциплина shell у субагента); Stop (<code>visual-check</code> — нет скрина после правки вёрстки; <code>capitulation-check</code> — сдался без попытки; <code>todo-drain</code> — есть незакрытые [ ] в Сейчас; <code>journal-check</code> — была работа без записи WHY); UserPromptSubmit (<code>remind-rules</code> — раз в 15 сообщений впрыскивает CLAUDE.md; <code>think-deeper</code> — на слово «подумай» включает Second Thought Gate).</li>
+          <li><strong>6 slash-команд</strong> в <code>.claude/commands/</code>: <code>/deploy</code>, <code>/journal</code>, <code>/next</code>, <code>/plan</code>, <code>/rules</code>, <code>/seccheck</code>.</li>
+          <li><strong>scripts/</strong> — самотесты каждого хука (PASS-кейсы для верификации после правок).</li>
+          <li><strong>Проект.md → ПРОЕКТ.md</strong> (заглавными — <code>visual-check</code> exempt list знает только этот вариант, иначе хук поймёт документ за вёрстку сайта).</li>
+          <li><strong>Удалён CLAUDE-PERMISSIONS-SETUP.md</strong> — его содержимое теперь в АРХИТЕКТУРА.md (раздел про «known limits» и в CLAUDE.md Правило 15). Дубликат бы разъехался.</li>
+          <li><strong>Журнал:</strong> старая секция «Открытые задачи» (Vite skeleton, Project Picker и т.д. — всё закрыто в ранних сессиях) помечена как переехавшая в TODO.md. Добавлен блок «📍 ПЕРЕДАЧА» в начало — мини-ТЗ для следующей сессии (перезаписывается через <code>/journal</code>).</li>
+        </ul>
+
+        <strong>WHY:</strong> длинные сессии = «выцветание правил» (правило, прочитанное в начале, теряет вес к 80% контекста). 12 правил это терпело, 17 — уже невозможно держать как живую дисциплину. Поэтому ключевые правила <em>механизированы</em> в хуки, а UserPromptSubmit-хук <code>remind-rules</code> раз в 15 сообщений впрыскивает CLAUDE.md заново. Bypass-режим разрешений компенсируется поведенческими гардами + механическими гардами в <code>guard-*.js</code>.<br><br>
+
+        <strong>Известные пределы (НЕ переисследовать — встроенные в Claude Code):</strong> permission-промпты на «expansion obfuscation» (compound shell) и на правки <code>.claude/</code> — конфигом НЕ снимаются (by design). Лечение: shell сложнее одной команды → файл в <code>scripts/</code>, запуск <code>bash scripts/x.sh</code>.<br><br>
+
+        <strong>Следующий шаг:</strong> в новой сессии самотест хуков (<code>rm -rf /несуществующая-папка-тест</code> → ожидаемо «ЗАБЛОКИРОВАНО ХУКОМ»), затем по очереди из TODO.md.
+      </div>
     </div>
 
     <div class="decision important">

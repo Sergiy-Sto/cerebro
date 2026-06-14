@@ -2,3 +2,9 @@ app/node_modules/
 app/dist/
 *.local
 .env
+
+# Runtime-состояние claude-kit хуков (не коммитим)
+.claude/rules-counter.txt
+.claude/journal-check-state.json
+.claude/todo-drain-state.json
+.claude/settings.local.json

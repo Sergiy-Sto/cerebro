@@ -1,0 +1,4 @@
+# В .gitignore проекта добавь (локальное состояние хуков):
+.claude/rules-counter.txt
+.claude/journal-check-state.json
+.claude/settings.local.json

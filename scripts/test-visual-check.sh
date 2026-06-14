@@ -9,13 +9,14 @@ HOOK=".claude/hooks/visual-check.js"
 TMP="_t.jsonl"
 pass=0; fail=0
 
+user_block() { printf '{"type":"user","message":{"content":[{"type":"text","text":"test"}]}}'; }
 edit_block() { printf '{"message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"%s","new_string":"%s"}}]}}' "$1" "$2"; }
 ss_block()   { printf '{"message":{"content":[{"type":"tool_use","name":"mcp__Claude_in_Chrome__computer","input":{"action":"screenshot"}}]}}'; }
 run() { printf '{"transcript_path":"%s","stop_hook_active":false}' "$TMP" | node "$HOOK" >/dev/null 2>&1; echo $?; }
 
-# $1 = описание, $2 = ожидаемый код (0=не флаг, 2=флаг), $3 = содержимое транскрипта
+# $1 = описание, $2 = ожидаемый код (0=не флаг, 2=флаг), $3 = блоки ПОСЛЕ user-сообщения
 check() {
-  printf '%s' "$3" > "$TMP"
+  { user_block; printf '\n'; printf '%s' "$3"; } > "$TMP"
   local got; got=$(run)
   if [ "$got" = "$2" ]; then echo "  OK  [$1] exit=$got"; pass=$((pass+1));
   else echo "  FAIL[$1] ожид=$2 факт=$got"; fail=$((fail+1)); fi
@@ -27,8 +28,23 @@ check "ПРОЕКТ.md (док)"        0 "$(edit_block 'ПРОЕКТ.md' 'arch 
 check "style.css (вёрстка)"    2 "$(edit_block 'assets/style.css' 'body{color:red}')"
 check "product-page.html"      2 "$(edit_block 'product-page.html' 'div class= margin padding color flex')"
 check ".claude/hooks (тулинг)" 0 "$(edit_block '.claude/hooks/visual-check.js' 'color margin padding flex grid styleMarkerRe')"
-{ edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_block; } > "$TMP"
-check "css + скриншот после"   0 "$(cat "$TMP")"
+{ user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_block; } > "$TMP"
+check_after_compose() {
+  local got; got=$(run)
+  if [ "$got" = "0" ]; then echo "  OK  [css + скриншот после] exit=$got"; pass=$((pass+1));
+  else echo "  FAIL[css + скриншот после] ожид=0 факт=$got"; fail=$((fail+1)); fi
+}
+check_after_compose
+# доп. кейс: только user-сообщение без действий → не флаг
+{ user_block; } > "$TMP"
+got=$(run)
+if [ "$got" = "0" ]; then echo "  OK  [пустой ход (нет правок)] exit=$got"; pass=$((pass+1));
+else echo "  FAIL[пустой ход] ожид=0 факт=$got"; fail=$((fail+1)); fi
+# доп. кейс: старая мутация ДО user-сообщения не должна флагать в новом ходу
+{ edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; user_block; } > "$TMP"
+got=$(run)
+if [ "$got" = "0" ]; then echo "  OK  [старая мутация до user → не флаг (фикс)] exit=$got"; pass=$((pass+1));
+else echo "  FAIL[старая мутация до user] ожид=0 факт=$got"; fail=$((fail+1)); fi
 
 rm -f "$TMP"
 echo "Итог: PASS=$pass FAIL=$fail"

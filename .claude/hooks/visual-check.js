@@ -40,12 +40,33 @@ process.stdin.on("end", () => {
   // содержат слова color/margin/... в регэкспах → оба ловятся styleMarkerRe.
   const docExemptRe = /(^|[\\/])(ЖУРНАЛ\.html|ПРОЕКТ\.md|TODO\.md|CLAUDE\.md)$|(^|[\\/])\.claude[\\/]/i;
 
+  // ФИКС false-positive: считаем мутации/скрины ТОЛЬКО в текущем ходу
+  // (от последнего реального сообщения Заказчика и далее). Иначе старые
+  // .tsx/.css-Edit'ы из ранних сессий висят как «непрокрытая мутация», и
+  // хук пинает каждый ход, даже когда правок в текущем ходу не было.
+  const allLines = fs.readFileSync(path, "utf8").split("\n");
+  let lastUserIdx = -1;
+  for (let k = 0; k < allLines.length; k++) {
+    if (!allLines[k].trim()) continue;
+    let e;
+    try { e = JSON.parse(allLines[k]); } catch (err) { continue; }
+    const c = e && e.message ? e.message.content : null;
+    if (e.type === "user" && c) {
+      const isReal =
+        typeof c === "string" ||
+        (Array.isArray(c) && c.some((b) => b.type === "text") && !c.some((b) => b.type === "tool_result"));
+      if (isReal) lastUserIdx = k;
+    }
+  }
+  if (lastUserIdx < 0) process.exit(0);
+
   let lastMutation = -1;
   let lastScreenshot = -1;
   let i = 0;
 
-  for (const line of fs.readFileSync(path, "utf8").split("\n")) {
+  for (const line of allLines) {
     i++;
+    if (i <= lastUserIdx + 1) continue; // считаем только после последнего user-сообщения
     if (!line.trim()) continue;
     let entry;
     try { entry = JSON.parse(line); } catch (e) { continue; }

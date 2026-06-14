@@ -210,6 +210,17 @@
       <h2>История решений</h2>
     </div>
 
+    <div class="decision">
+      <div class="decision-date">2026-06-15 · Фикс false-positive в visual-check.js</div>
+      <div class="decision-title">🩹 visual-check теперь смотрит только текущий ход (от lastUserIdx)</div>
+      <div class="decision-why">
+        <strong>Симптом:</strong> сразу после применения kit-а хук пинал каждый Stop, даже когда правок в текущем ходу не было.<br>
+        <strong>Root cause:</strong> хук считал <code>lastMutation</code>/<code>lastScreenshot</code> по ВСЕМУ transcript-файлу. В длинных сессиях остаются старые Edit'ы <code>.tsx/.css</code> без последующего Chrome MCP screenshot — хук считал их «непрокрытыми мутациями» и флагал каждый раз.<br>
+        <strong>Фикс:</strong> добавлен поиск <code>lastUserIdx</code> (как в <code>journal-check</code>/<code>todo-drain</code>) и счётчики мутации/скрина игнорируют всё ДО последнего сообщения Заказчика. Самотест расширен: «старая мутация до user → не флаг (фикс)» — PASS.<br>
+        <strong>Эффект:</strong> хук пинает только когда реальные правки вёрстки сделаны в текущем ходу и не покрыты скриншотом.
+      </div>
+    </div>
+
     <div class="decision important">
       <div class="decision-date">2026-06-14 · Применена claude-kit-starter архитектура — механические гарды поверх дисциплины</div>
       <div class="decision-title">🛠️ Применён claude-kit-starter (17 правил, 9 хуков, 6 slash-команд, scripts/ самотесты)</div>

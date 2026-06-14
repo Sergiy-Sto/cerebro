@@ -81,7 +81,7 @@
   <div class="subtitle">Creative Core Workbench · Живое состояние проекта · Обновляется каждую сессию</div>
 
   <div class="alert">
-    <strong>Для Claude:</strong> Живое состояние и история WHY — здесь. <strong>Открытые задачи живут в <code>TODO.md</code></strong>, в Журнале их нет. Правила работы → <code>CLAUDE.md</code>. Видение/архитектура проекта → <code>ПРОЕКТ.md</code>. Карта системы хуков → <code>АРХИТЕКТУРА.md</code>. Читать в начале каждой сессии (ЖУРНАЛ + ПРОЕКТ + TODO). В конце сессии — обновить блок 📍 ПЕРЕДАЧА (через <code>/journal</code>) и добавить запись в «Историю решений» по горячим следам.
+    <strong>Для Claude:</strong> Живое состояние и история WHY — здесь. <strong>Открытые задачи живут в <code>TODO.md</code></strong>, в Журнале их нет. Правила работы → <code>CLAUDE.md</code>. Видение/архитектура проекта → <code>ПРОЕКТ.md</code>. Карта системы хуков → <code>ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md</code>. Читать в начале каждой сессии (ЖУРНАЛ + ПРОЕКТ + TODO). В конце сессии — обновить блок 📍 ПЕРЕДАЧА (через <code>/journal</code>) и добавить запись в «Историю решений» по горячим следам.
   </div>
 
   <!-- 📍 ПЕРЕДАЧА — мини-ТЗ для следующей сессии (перезаписывается через /journal) -->
@@ -92,7 +92,7 @@
     </div>
     <p style="font-size:13px; color:#1e40af; margin-bottom:10px;">Перезаписывается в конце каждой сессии командой <code>/journal</code>. Мини-ТЗ — 3–7 строк.</p>
     <ul style="padding-left:20px; font-size:14px; line-height:1.7;">
-      <li><strong>Где остановились:</strong> 2026-06-15 применили claude-kit-starter + пофиксили false-positive в <code>visual-check.js</code> (теперь смотрит только текущий ход от lastUserIdx). Всё запушено в main (<code>134b1e8</code>). Заказчик уходит в новую сессию для чистого теста — нашёл нативный способ открывать каждый проект в своей сессии через десктоп Claude (заменяет вчерашнюю возню с PS 7 / ярлыками).</li>
+      <li><strong>Где остановились:</strong> 2026-06-15 применили claude-kit-starter + пофиксили false-positive в <code>visual-check.js</code> (теперь смотрит только текущий ход от lastUserIdx). Затем переименовали <code>АРХИТЕКТУРА.md</code> → <code>ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md</code> (путалось с архитектурой проекта) — закоммичено <strong>локально</strong> (<code>560eccb</code>, <em>не запушено</em>, доки на прод не влияют). Предыдущий kit-коммит <code>134b1e8</code> в origin/main. Заказчик уходит в новую сессию для чистого теста — нашёл нативный способ открывать каждый проект в своей сессии через десктоп Claude (заменяет вчерашнюю возню с PS 7 / ярлыками).</li>
       <li><strong>Что первым:</strong>
         <ol style="margin-top:4px;">
           <li>Стартовый чек-лист CLAUDE.md (прочитать ЖУРНАЛ + ПРОЕКТ + TODO).</li>
@@ -106,7 +106,7 @@
           <li>Любая compound-команда (<code>&&</code> / <code>;</code> / shell-функция) → блок guard-bash. Команды по одной ИЛИ в <code>scripts/x.sh</code>.</li>
           <li>Коммит-сообщения с подстроками типа <code>rm -rf</code> или <code>force</code> в тексте → блок guard-bash regex. Пиши коммит-message через файл: Write <code>.git-commit-msg.tmp</code>, потом <code>git commit -F .git-commit-msg.tmp</code>, потом <code>rm .git-commit-msg.tmp</code>.</li>
           <li>PowerShell 5.1 портит UTF-8 в cmdline с кириллицей. Использовать <code>pwsh</code> (PS 7) + скрипт из файла, а не inline <code>-Command "..."</code>.</li>
-          <li>Архив <code>claude-kit-starter.zip</code> удалён, но содержимое kit-а целиком в проекте (<code>.claude/</code>, <code>scripts/</code>, корневые .md). Для копирования в Nokki / Scandiwall / OpenClaw — брать оттуда.</li>
+          <li>Kit уже раскатан на все проекты (Nokki / Scandiwall / OpenClaw) — у каждого своя папка с <code>.claude/</code>, <code>scripts/</code>, корневыми .md. Копировать из Цербро заново НЕ нужно. Содержимое kit-а целиком лежит в этом проекте как референс.</li>
         </ul>
       </li>
     </ul>
@@ -225,6 +225,14 @@
     </div>
 
     <div class="decision">
+      <div class="decision-date">2026-06-15 · Переименование АРХИТЕКТУРА.md</div>
+      <div class="decision-title">🏷️ <code>АРХИТЕКТУРА.md</code> → <code>ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md</code></div>
+      <div class="decision-why">
+        <strong>WHY:</strong> «Архитектура» путалась с архитектурой <em>проекта</em> (она в <code>ПРОЕКТ.md</code>). Файл же про механику kit-а — хуки/команды/скрипты, «по работе». Новое имя сразу говорит что внутри. Переименовано через <code>git mv</code> (история сохранена), ссылки обновлены в <code>CLAUDE.md</code> / <code>ПРОЕКТ.md</code> / <code>ЖУРНАЛ.html</code> + заголовок самого файла. <code>visual-check</code> на <code>.md</code> не реагирует (ловит только .css/.tsx/.html/.php) — exempt-list не трогали. <strong>То же переименование стоит повторить в Nokki / Scandiwall / OpenClaw</strong> — kit раскатан везде, имя файла должно быть единым.
+      </div>
+    </div>
+
+    <div class="decision">
       <div class="decision-date">2026-06-15 · Фикс false-positive в visual-check.js</div>
       <div class="decision-title">🩹 visual-check теперь смотрит только текущий ход (от lastUserIdx)</div>
       <div class="decision-why">
@@ -249,7 +257,7 @@
           <li><strong>6 slash-команд</strong> в <code>.claude/commands/</code>: <code>/deploy</code>, <code>/journal</code>, <code>/next</code>, <code>/plan</code>, <code>/rules</code>, <code>/seccheck</code>.</li>
           <li><strong>scripts/</strong> — самотесты каждого хука (PASS-кейсы для верификации после правок).</li>
           <li><strong>Проект.md → ПРОЕКТ.md</strong> (заглавными — <code>visual-check</code> exempt list знает только этот вариант, иначе хук поймёт документ за вёрстку сайта).</li>
-          <li><strong>Удалён CLAUDE-PERMISSIONS-SETUP.md</strong> — его содержимое теперь в АРХИТЕКТУРА.md (раздел про «known limits» и в CLAUDE.md Правило 15). Дубликат бы разъехался.</li>
+          <li><strong>Удалён CLAUDE-PERMISSIONS-SETUP.md</strong> — его содержимое теперь в ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md (раздел про «known limits» и в CLAUDE.md Правило 15). Дубликат бы разъехался.</li>
           <li><strong>Журнал:</strong> старая секция «Открытые задачи» (Vite skeleton, Project Picker и т.д. — всё закрыто в ранних сессиях) помечена как переехавшая в TODO.md. Добавлен блок «📍 ПЕРЕДАЧА» в начало — мини-ТЗ для следующей сессии (перезаписывается через <code>/journal</code>).</li>
         </ul>
 

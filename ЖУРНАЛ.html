@@ -227,6 +227,16 @@
       <h2>История решений</h2>
     </div>
 
+    <div class="decision important">
+      <div class="decision-date">2026-06-15 · Разрешения + мобильный скрин (инфра-сессия)</div>
+      <div class="decision-title">🔓 Найден корень «вечных» permission-промптов + выбран Playwright MCP для мобильных скринов</div>
+      <div class="decision-why">
+        <strong>Permission-промпты (root cause):</strong> на Desktop режим разрешений задаётся <em>UI-селектором у строки ввода</em> (<code>Ctrl+Shift+M</code> → <code>5</code> = Bypass), а <code>settings.json</code> <code>defaultMode</code> десктоп ИГНОРИРУЕТ. Тумблер Settings→Claude Code→«Allow bypass» только разблокирует опцию, не активирует. Раньше чинили не тот рычаг (правили файл + жали «Always allow») → промпты возвращались. Внесено в старт-чеклист (шаг 6) как рутина: я напоминаю Заказчику включить Bypass.<br>
+        <strong>Мобильный скрин:</strong> Chrome MCP <code>resize_window</code> МЁРТВ (не reflow-ит — скрин остаётся десктопным 1512px, мелкий ресайз вешает рендер; проверено вживую). Выбран <strong>Playwright MCP</strong> как архитектурное решение (глобально один раз → все проекты, любой URL). Прописан в <code>~/.claude.json</code> top-level <code>mcpServers</code> (user-scope), Node v24 есть, JSON валиден — ⏳ ждёт рестарта Desktop для активации.<br>
+        <strong>Kit-дыра (WHY задача в TODO):</strong> kit описывал «как работать», но не «как привести среду в рабочее состояние на новой машине» (нужные коннекторы + установка). Принцип на будущее: думать про универсальный кит, не только текущую сессию.
+      </div>
+    </div>
+
     <div class="decision">
       <div class="decision-date">2026-06-15 · Переименование АРХИТЕКТУРА.md</div>
       <div class="decision-title">🏷️ <code>АРХИТЕКТУРА.md</code> → <code>ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md</code></div>

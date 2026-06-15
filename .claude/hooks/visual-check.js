@@ -3,9 +3,11 @@
 // Покрывает ДВА воркфлоу: файловый (Edit/Write .css/.jsx/.php) и браузерный
 // (живой WordPress/Elementor через Chrome MCP: $e.run, WPCode setValue,
 // wp.data.dispatch-сеттеры, savePost, fetch POST, сабмиты).
-// Скриншотом считается ТОЛЬКО реальный screenshot/zoom через Chrome MCP.
+// Скриншотом считается реальный screenshot/zoom через Chrome MCP или Playwright.
 // DOM-чтение (page_text, computed style) НЕ считается — оно и усыпляет бдительность.
 // Один пинок за ход (stop_hook_active).
+// + Mobile-нудж: на ЗАВЕРШЕНИИ этапа (готово/commit/TODO[x]) с правкой вёрстки, если
+//   моб-скрин (Playwright resize<=500) не снят → напоминание 1 раз на завершение (НЕ запрет).
 // Адаптация: Claude (сессия ScandiWall) по полевому опыту; фикс browser_batch: Claude (ревью).
 
 const fs = require("fs");
@@ -40,6 +42,11 @@ process.stdin.on("end", () => {
   // содержат слова color/margin/... в регэкспах → оба ловятся styleMarkerRe.
   const docExemptRe = /(^|[\\/])(ЖУРНАЛ\.html|ПРОЕКТ\.md|TODO\.md|CLAUDE\.md)$|(^|[\\/])\.claude[\\/]/i;
 
+  // --- Mobile-нудж на финише (напоминалка, НЕ запрет; 1 раз на завершение этапа) ---
+  const completionTextRe = /\bготов\w*\b|\bсделан\w*\b|задача выполн|этап выполн|✅/i;
+  const gitCommitRe = /git\s+(-C\s+\S+\s+)?commit/i;
+  const playwrightShotRe = /playwright__browser_take_screenshot/i;
+
   // ФИКС false-positive: считаем мутации/скрины ТОЛЬКО в текущем ходу
   // (от последнего реального сообщения Заказчика и далее). Иначе старые
   // .tsx/.css-Edit'ы из ранних сессий висят как «непрокрытая мутация», и
@@ -62,6 +69,8 @@ process.stdin.on("end", () => {
 
   let lastMutation = -1;
   let lastScreenshot = -1;
+  let completionSignal = false;
+  let mobileShot = false;
   let i = 0;
 
   for (const line of allLines) {
@@ -72,9 +81,19 @@ process.stdin.on("end", () => {
     try { entry = JSON.parse(line); } catch (e) { continue; }
     const content = entry && entry.message && Array.isArray(entry.message.content) ? entry.message.content : [];
     for (const block of content) {
-      if (!block || block.type !== "tool_use") continue;
+      if (!block) continue;
+      if (block.type === "text" && completionTextRe.test(String(block.text || ""))) completionSignal = true;
+      if (block.type !== "tool_use") continue;
       const name = String(block.name || "");
       const inp = block.input || {};
+
+      // Сигналы завершения этапа (для моб-нуджа) + моб-скрин снят?
+      if (/^Bash$/.test(name) && gitCommitRe.test(String(inp.command || ""))) completionSignal = true;
+      if (/playwright/i.test(name)) {
+        if (playwrightShotRe.test(name)) lastScreenshot = i;
+        if (/browser_resize/i.test(name) && Number(inp.width) > 0 && Number(inp.width) <= 500) mobileShot = true;
+      }
+      if (/resize_window/i.test(name) && Number(inp.width) > 0 && Number(inp.width) <= 500) mobileShot = true;
 
       if (/Claude_in_Chrome/.test(name)) {
         if (/javascript_tool/.test(name) && jsMutationRe.test(String(inp.text || ""))) lastMutation = i;
@@ -91,12 +110,14 @@ process.stdin.on("end", () => {
       if (/^(Edit|Write|MultiEdit)$/.test(name)) {
         const file = String(inp.file_path || inp.path || "");
         const text = String(inp.new_string || inp.content || "");
+        if (/TODO\.md$/i.test(file) && /\[x\]/i.test(text)) completionSignal = true; // задача закрыта
         if (docExemptRe.test(file)) continue; // локальный док проекта — не страница сайта
         if (fileVisualRe.test(file) || (fileMarkupRe.test(file) && styleMarkerRe.test(text))) lastMutation = i;
       }
     }
   }
 
+  // 1) Жёсткая проверка: вёрстка тронута, но скрина после неё нет вообще.
   if (lastMutation > -1 && lastScreenshot < lastMutation) {
     process.stderr.write(
       "STOP-ХУК (визуал): была правка живой страницы (Elementor/WPCode/Rank Math/POST) или визуального файла, " +
@@ -106,6 +127,23 @@ process.stdin.on("end", () => {
       "Скрин физически не снимается — напиши это ЯВНО и попроси Заказчика глянуть у себя."
     );
     process.exit(2);
+  }
+
+  // 2) Mobile-нудж: вёрстка тронута + завершение этапа + моб-скрин НЕ снят → напомнить 1 раз.
+  if (lastMutation > -1 && completionSignal && !mobileShot) {
+    const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+    const statePath = root + "/.claude/visual-check-mobile-state.json";
+    let st = { lastUserIdx: -1 };
+    try { st = JSON.parse(fs.readFileSync(statePath, "utf8")); } catch (e) {}
+    if (st.lastUserIdx !== lastUserIdx) {
+      try { fs.writeFileSync(statePath, JSON.stringify({ lastUserIdx })); } catch (e) {}
+      process.stderr.write(
+        "🔔 STOP-ХУК (моб-напоминалка, НЕ запрет): завершаешь этап с правкой вёрстки. " +
+        "Нужен ли скрин в МОБИЛЬНОМ вьюпорте? Затронут responsive → Playwright browser_resize 390 → screenshot, сравни. " +
+        "Не затронут → ответь «моб не нужен» и завершай. Дёргаю один раз на завершение."
+      );
+      process.exit(2);
+    }
   }
   process.exit(0);
 });

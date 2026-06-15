@@ -227,6 +227,14 @@
       <h2>История решений</h2>
     </div>
 
+    <div class="decision">
+      <div class="decision-date">2026-06-16 · Mobile-нудж в visual-check</div>
+      <div class="decision-title">🔔 visual-check напоминает про моб-вид на завершении этапа (напоминание, НЕ запрет)</div>
+      <div class="decision-why">
+        <strong>WHY:</strong> мобильная составляющая важна почти везде, но скрин за каждой мелкой правкой — перебор. Решение (идея Заказчика): хук дёргает про моб-вид <em>только на завершении этапа</em> — сигнал = текст «готово/✅», <code>git commit</code> ИЛИ TODO <code>[x]</code> — при условии что была правка вёрстки И моб-скрин (Playwright <code>resize</code>≤500) не снят. Напоминает <strong>1 раз</strong> на завершение (state-файл <code>visual-check-mobile-state.json</code>), НЕ блокирует — отвечаешь «моб не нужен» и идёшь дальше. Десктоп-проверка не тронута; хук дополнительно научен видеть Playwright-скрины. Тесты 12/12. Обвязка: Playwright добавлен в старт-отчёт (шаг 6), <code>rebuild-kit.ps1</code> переписан на категорийное копирование (правки кита больше не теряются по забытому списку).
+      </div>
+    </div>
+
     <div class="decision important">
       <div class="decision-date">2026-06-15 · Разрешения + мобильный скрин (инфра-сессия)</div>
       <div class="decision-title">🔓 Найден корень «вечных» permission-промптов + выбран Playwright MCP для мобильных скринов</div>

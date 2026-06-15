@@ -12,7 +12,9 @@ pass=0; fail=0
 user_block() { printf '{"type":"user","message":{"content":[{"type":"text","text":"test"}]}}'; }
 edit_block() { printf '{"message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"%s","new_string":"%s"}}]}}' "$1" "$2"; }
 ss_block()   { printf '{"message":{"content":[{"type":"tool_use","name":"mcp__Claude_in_Chrome__computer","input":{"action":"screenshot"}}]}}'; }
-run() { printf '{"transcript_path":"%s","stop_hook_active":false}' "$TMP" | node "$HOOK" >/dev/null 2>&1; echo $?; }
+done_block() { printf '{"message":{"content":[{"type":"text","text":"готово ✅"}]}}'; }
+mobshot_block() { printf '{"message":{"content":[{"type":"tool_use","name":"mcp__playwright__browser_resize","input":{"width":390,"height":844}}]}}'; }
+run() { rm -f .claude/visual-check-mobile-state.json; printf '{"transcript_path":"%s","stop_hook_active":false}' "$TMP" | node "$HOOK" >/dev/null 2>&1; echo $?; }
 
 # $1 = описание, $2 = ожидаемый код (0=не флаг, 2=флаг), $3 = блоки ПОСЛЕ user-сообщения
 check() {
@@ -46,6 +48,18 @@ got=$(run)
 if [ "$got" = "0" ]; then echo "  OK  [старая мутация до user → не флаг (фикс)] exit=$got"; pass=$((pass+1));
 else echo "  FAIL[старая мутация до user] ожид=0 факт=$got"; fail=$((fail+1)); fi
 
-rm -f "$TMP"
+# --- Mobile-нудж на завершении ---
+echo "== visual-check: mobile-нудж =="
+massert() { local got; got=$(run); if [ "$got" = "$2" ]; then echo "  OK  [$1] exit=$got"; pass=$((pass+1)); else echo "  FAIL[$1] ожид=$2 факт=$got"; fail=$((fail+1)); fi; }
+{ user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_block; printf '\n'; done_block; } > "$TMP"
+massert "вёрстка+готово+десктоп-скрин, без моб → нудж" 2
+{ user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_block; printf '\n'; mobshot_block; printf '\n'; done_block; } > "$TMP"
+massert "вёрстка+готово+моб-скрин снят → не нудж" 0
+{ user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_block; } > "$TMP"
+massert "вёрстка без завершения → не нудж" 0
+{ user_block; printf '\n'; done_block; } > "$TMP"
+massert "завершение без вёрстки → не нудж" 0
+
+rm -f "$TMP" .claude/visual-check-mobile-state.json
 echo "Итог: PASS=$pass FAIL=$fail"
 [ "$fail" = 0 ]

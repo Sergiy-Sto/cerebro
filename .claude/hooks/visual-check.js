@@ -3,12 +3,14 @@
 // Покрывает ДВА воркфлоу: файловый (Edit/Write .css/.jsx/.php) и браузерный
 // (живой WordPress/Elementor через Chrome MCP: $e.run, WPCode setValue,
 // wp.data.dispatch-сеттеры, savePost, fetch POST, сабмиты).
-// Скриншотом считается реальный screenshot/zoom через Chrome MCP или Playwright.
+// Скриншотом считается реальный screenshot/zoom через Chrome MCP или Playwright,
+// ЧЕЙ РЕЗУЛЬТАТ НЕ ОШИБКА (упавший/timeout-скрин НЕ засчитывается — проход 0).
 // DOM-чтение (page_text, computed style) НЕ считается — оно и усыпляет бдительность.
 // Один пинок за ход (stop_hook_active).
 // + Mobile-нудж: на ЗАВЕРШЕНИИ этапа (готово/commit/TODO[x]) с правкой вёрстки, если
 //   моб-скрин (Playwright resize<=500) не снят → напоминание 1 раз на завершение (НЕ запрет).
-// Адаптация: Claude (сессия ScandiWall) по полевому опыту; фикс browser_batch: Claude (ревью).
+// Адаптация: Claude (сессия ScandiWall) по полевому опыту; фикс browser_batch + проверка
+// упавшего скрина (Elementor Brown swatch: Chrome MCP timeout засчитывался как скрин): Claude.
 
 const fs = require("fs");
 
@@ -47,11 +49,30 @@ process.stdin.on("end", () => {
   const gitCommitRe = /git\s+(-C\s+\S+\s+)?commit/i;
   const playwrightShotRe = /playwright__browser_take_screenshot/i;
 
+  const allLines = fs.readFileSync(path, "utf8").split("\n");
+
+  // --- Проход 0: id вызовов, ЧЕЙ tool_result — ошибка (упавший скрин ≠ скрин) ---
+  // tool_result приходит ПОЗЖЕ своего tool_use, поэтому отдельный предпроход.
+  const shotErrRe = /error capturing|timed out|timeout|renderer may be|###\s*error|failed to (capture|take|screenshot)|screenshot[^"]*(fail|error)/i;
+  const erroredToolIds = new Set();
+  for (const line of allLines) {
+    if (!line.trim()) continue;
+    let e; try { e = JSON.parse(line); } catch (err) { continue; }
+    const content = e && e.message && Array.isArray(e.message.content) ? e.message.content : [];
+    for (const b of content) {
+      if (!b || b.type !== "tool_result") continue;
+      const txt = typeof b.content === "string" ? b.content : JSON.stringify(b.content || "");
+      if (b.is_error === true || shotErrRe.test(txt)) {
+        if (b.tool_use_id) erroredToolIds.add(b.tool_use_id);
+      }
+    }
+  }
+  const okShot = (block) => !erroredToolIds.has(block && block.id);
+
   // ФИКС false-positive: считаем мутации/скрины ТОЛЬКО в текущем ходу
   // (от последнего реального сообщения Заказчика и далее). Иначе старые
   // .tsx/.css-Edit'ы из ранних сессий висят как «непрокрытая мутация», и
   // хук пинает каждый ход, даже когда правок в текущем ходу не было.
-  const allLines = fs.readFileSync(path, "utf8").split("\n");
   let lastUserIdx = -1;
   for (let k = 0; k < allLines.length; k++) {
     if (!allLines[k].trim()) continue;
@@ -90,7 +111,7 @@ process.stdin.on("end", () => {
       // Сигналы завершения этапа (для моб-нуджа) + моб-скрин снят?
       if (/^Bash$/.test(name) && gitCommitRe.test(String(inp.command || ""))) completionSignal = true;
       if (/playwright/i.test(name)) {
-        if (playwrightShotRe.test(name)) lastScreenshot = i;
+        if (playwrightShotRe.test(name) && okShot(block)) lastScreenshot = i;
         if (/browser_resize/i.test(name) && Number(inp.width) > 0 && Number(inp.width) <= 500) mobileShot = true;
       }
       if (/resize_window/i.test(name) && Number(inp.width) > 0 && Number(inp.width) <= 500) mobileShot = true;
@@ -100,11 +121,11 @@ process.stdin.on("end", () => {
         else if (/browser_batch/.test(name)) {
           const ser = JSON.stringify(inp);
           if (jsMutationRe.test(ser)) lastMutation = i;
-          if (screenshotInBatchRe.test(ser)) lastScreenshot = Math.max(lastScreenshot, i); // ФИКС: скрин внутри batch
+          if (screenshotInBatchRe.test(ser) && okShot(block)) lastScreenshot = Math.max(lastScreenshot, i);
         }
-        if (/computer/.test(name) && /screenshot|zoom/i.test(String(inp.action || ""))) lastScreenshot = i;
-        else if (/screenshot/i.test(name)) lastScreenshot = i;
-        else if (inp.save_to_disk === true) lastScreenshot = i;
+        if (/computer/.test(name) && /screenshot|zoom/i.test(String(inp.action || "")) && okShot(block)) lastScreenshot = i;
+        else if (/screenshot/i.test(name) && okShot(block)) lastScreenshot = i;
+        else if (inp.save_to_disk === true && okShot(block)) lastScreenshot = i;
       }
 
       if (/^(Edit|Write|MultiEdit)$/.test(name)) {
@@ -117,14 +138,14 @@ process.stdin.on("end", () => {
     }
   }
 
-  // 1) Жёсткая проверка: вёрстка тронута, но скрина после неё нет вообще.
+  // 1) Жёсткая проверка: вёрстка тронута, но УСПЕШНОГО скрина после неё нет.
   if (lastMutation > -1 && lastScreenshot < lastMutation) {
     process.stderr.write(
-      "STOP-ХУК (визуал): была правка живой страницы (Elementor/WPCode/Rank Math/POST) или визуального файла, " +
-      "но ПОСЛЕ неё нет скриншота через Chrome MCP. Правило 2: сними скрин затронутого блока (desktop; mobile если " +
-      "задет responsive), сравни ДО/ПОСЛЕ или с эталоном, и только потом завершай с явным «проверил визуально». " +
-      "DOM-проверка (page_text/computed style) НЕ считается. " +
-      "Скрин физически не снимается — напиши это ЯВНО и попроси Заказчика глянуть у себя."
+      "STOP-ХУК (визуал): была правка вёрстки/живой страницы (Elementor/WPCode/POST), но ПОСЛЕ неё нет " +
+      "УСПЕШНОГО скриншота (упавший/timeout-скрин НЕ считается). Правило 2: сними скрин затронутого блока. " +
+      "desktop = Chrome MCP; если он падает/timeout — СРАЗУ пробуй Playwright (browser_navigate + browser_take_screenshot). " +
+      "mobile = Playwright ОБЯЗАТЕЛЬНО (browser_resize 390 → screenshot). Сравни ДО/ПОСЛЕ или с эталоном, потом «проверил визуально». " +
+      "DOM-проверка (page_text/computed style) НЕ считается. Физически никак — напиши ЯВНО и попроси Заказчика глянуть."
     );
     process.exit(2);
   }

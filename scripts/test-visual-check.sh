@@ -14,6 +14,9 @@ edit_block() { printf '{"message":{"content":[{"type":"tool_use","name":"Edit","
 ss_block()   { printf '{"message":{"content":[{"type":"tool_use","name":"mcp__Claude_in_Chrome__computer","input":{"action":"screenshot"}}]}}'; }
 done_block() { printf '{"message":{"content":[{"type":"text","text":"готово ✅"}]}}'; }
 mobshot_block() { printf '{"message":{"content":[{"type":"tool_use","name":"mcp__playwright__browser_resize","input":{"width":390,"height":844}}]}}'; }
+ss_id()   { printf '{"message":{"content":[{"type":"tool_use","id":"%s","name":"mcp__Claude_in_Chrome__computer","input":{"action":"screenshot"}}]}}' "$1"; }
+res_err() { printf '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"%s","is_error":true,"content":"Error capturing screenshot: CDP timed out"}]}}' "$1"; }
+res_ok()  { printf '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"%s","content":"Successfully captured screenshot"}]}}' "$1"; }
 run() { rm -f .claude/visual-check-mobile-state.json; printf '{"transcript_path":"%s","stop_hook_active":false}' "$TMP" | node "$HOOK" >/dev/null 2>&1; echo $?; }
 
 # $1 = описание, $2 = ожидаемый код (0=не флаг, 2=флаг), $3 = блоки ПОСЛЕ user-сообщения
@@ -59,6 +62,12 @@ massert "вёрстка+готово+моб-скрин снят → не нуд�
 massert "вёрстка без завершения → не нудж" 0
 { user_block; printf '\n'; done_block; } > "$TMP"
 massert "завершение без вёрстки → не нудж" 0
+
+echo "== visual-check: упавший скрин не засчитывается =="
+{ user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_id 's1'; printf '\n'; res_err 's1'; } > "$TMP"
+massert "css + упавший скрин (timeout) → флаг" 2
+{ user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_id 's2'; printf '\n'; res_ok 's2'; } > "$TMP"
+massert "css + успешный скрин (с id) → не флаг" 0
 
 rm -f "$TMP" .claude/visual-check-mobile-state.json
 echo "Итог: PASS=$pass FAIL=$fail"

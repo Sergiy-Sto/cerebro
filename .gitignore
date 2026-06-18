@@ -9,6 +9,7 @@ app/dist/
 .claude/todo-drain-state.json
 .claude/settings.local.json
 .claude/visual-check-mobile-state.json
+.claude/push-nudge-state.json
 
 # Артефакты Playwright MCP (скрины/снапшоты/логи сессии) и temp коммит-сообщений
 .playwright-mcp/

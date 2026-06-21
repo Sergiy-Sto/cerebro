@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// Stop hook: анти-«пушить или нет?». Правило 9 — push в master разрешения НЕ требует.
-// Если в последнем сообщении Claude спрашивает/откладывает пуш, а в репо есть
-// незапушенные коммиты → блок: пушь сам (или назови реальную причину не пушить).
-// Один раз на сообщение Заказчика (state-файл). Тест-сим ahead: ANTIPUSH_FAKE_AHEAD.
+// Stop hook: анти-«коммитить/пушить или нет?». Правило 9 — commit+push проверенной
+// работы делается САМ, без спроса. Если в последнем сообщении Claude спрашивает/
+// откладывает commit ИЛИ push, а в репо есть несинхронизированная работа
+// (незакоммиченные правки ИЛИ незапушенные коммиты) → блок: делай сам / назови причину.
+// Один раз на сообщение Заказчика (state-файл). Тест-сим: ANTIPUSH_FAKE_UNSYNCED=1/0.
 
 const fs = require("fs");
 const path = require("path");
@@ -35,22 +36,24 @@ process.stdin.on("end", () => {
   }
   if (lastUserIdx < 0) process.exit(0);
 
-  // Claude упоминает пуш И спрашивает/откладывает?
-  const mentionsPush = /пуш|push/i.test(lastAssistantText);
+  // Claude упоминает commit/push И спрашивает/откладывает?
+  const mentions = /коммит|commit|закоммит|пуш|push/i.test(lastAssistantText);
   const asksOrDefers = /\?/.test(lastAssistantText) ||
-    /\bили\b\s*(остав|нет|подожд|копить|позже|не\s*пуш)|оставить\s+как\s+есть|пока\s+(не\s+пуш|оставим)/i.test(lastAssistantText);
-  if (!(mentionsPush && asksOrDefers)) process.exit(0);
+    /\bили\b\s*(остав|нет|подожд|копить|позже|не\s*(пуш|коммит))|оставить\s+как\s+есть|пока\s+(не\s+(пуш|коммит)|оставим)|по\s+тво(ему|ему)\s+слову/i.test(lastAssistantText);
+  if (!(mentions && asksOrDefers)) process.exit(0);
 
-  // есть незапушенные коммиты? (тест-сим через ANTIPUSH_FAKE_AHEAD)
-  let ahead = 0;
-  if (process.env.ANTIPUSH_FAKE_AHEAD != null) {
-    ahead = parseInt(process.env.ANTIPUSH_FAKE_AHEAD, 10) || 0;
+  // есть несинхронизированная работа? (незакоммиченное ИЛИ незапушенное)
+  let unsynced;
+  if (process.env.ANTIPUSH_FAKE_UNSYNCED != null) {
+    unsynced = process.env.ANTIPUSH_FAKE_UNSYNCED === "1";
   } else {
     try {
-      ahead = parseInt(cp.execSync("git rev-list --count @{u}..HEAD", { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(), 10) || 0;
-    } catch (e) { process.exit(0); } // нет upstream / не git-репо → молчим
+      const ahead = parseInt(cp.execSync("git rev-list --count @{u}..HEAD", { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(), 10) || 0;
+      const dirty = cp.execSync("git status --porcelain", { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim().length > 0;
+      unsynced = ahead > 0 || dirty;
+    } catch (e) { process.exit(0); } // нет git/upstream → молчим
   }
-  if (ahead === 0) process.exit(0);
+  if (!unsynced) process.exit(0);
 
   // один раз на сообщение Заказчика
   const statePath = path.join(root, ".claude", "push-nudge-state.json");
@@ -60,9 +63,10 @@ process.stdin.on("end", () => {
   try { fs.writeFileSync(statePath, JSON.stringify({ lastUserIdx })); } catch (e) {}
 
   process.stderr.write(
-    "STOP-ХУК (анти-пуш-вопрос): ты спрашиваешь/откладываешь пуш, а в репо " + ahead + " незапушенных коммит(ов). " +
-    "Правило 9: push в master разрешения НЕ требует — НЕ спрашивай, запушь сам (git push). " +
-    "Реальная причина не пушить (работа сырая / force-push / Заказчик просил подождать) → назови её ЯВНО, иначе push."
+    "STOP-ХУК (анти-вопрос про commit/push): ты спрашиваешь/откладываешь commit или push, " +
+    "а в репо есть несинхронизированная работа (незакоммиченные правки / незапушенные коммиты). " +
+    "Правило 9: НЕ спрашивай — закрыл проверенную работу → commit + push сам. " +
+    "Реальная причина не делать (работа сырая / force-push / Заказчик просил подождать) → назови ЯВНО."
   );
   process.exit(2);
 });

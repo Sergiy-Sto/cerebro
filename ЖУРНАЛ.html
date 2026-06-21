@@ -84,36 +84,7 @@
     <strong>Для Claude:</strong> Живое состояние и история WHY — здесь. <strong>Открытые задачи живут в <code>TODO.md</code></strong>, в Журнале их нет. Правила работы → <code>CLAUDE.md</code>. Видение/архитектура проекта → <code>ПРОЕКТ.md</code>. Карта системы хуков → <code>ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md</code>. Читать в начале каждой сессии (ЖУРНАЛ + ПРОЕКТ + TODO). В конце сессии — обновить блок 📍 ПЕРЕДАЧА (через <code>/journal</code>) и добавить запись в «Историю решений» по горячим следам.
   </div>
 
-  <!-- 📍 ПЕРЕДАЧА — мини-ТЗ для следующей сессии (перезаписывается через /journal) -->
-  <div class="section" style="border:2px solid #3b82f6; background:#eff6ff;">
-    <div class="section-header" style="border-bottom-color:#bfdbfe;">
-      <div class="section-icon" style="background:#3b82f6; color:#fff;">📍</div>
-      <h2 style="color:#1e3a8a;">ПЕРЕДАЧА — старт следующей сессии</h2>
-    </div>
-    <p style="font-size:13px; color:#1e40af; margin-bottom:10px;">Перезаписывается в конце каждой сессии командой <code>/journal</code>. Мини-ТЗ — 3–7 строк.</p>
-    <ul style="padding-left:20px; font-size:14px; line-height:1.7;">
-      <li><strong>Где остановились:</strong> 2026-06-15/16 — большая kit-сессия. РЕШЕНО: (1) <strong>промпты разрешений</strong> — рычаг это селектор сессии (<code>Ctrl+Shift+M</code>→5), НЕ settings.json; (2) <strong>мобильные скрины</strong> — Playwright MCP подключён и работает (реальный reflow); (3) <strong>кит вычищен</strong> — compound-команды разрешены под Bypass (<code>guard-bash</code> ослаблен, <code>guard-subagent</code> ретайрнут), добавлен <strong>моб-нудж</strong> в <code>visual-check</code> (напоминает про моб на финише, НЕ блок), провижининг-runbook в архитектурный док, <code>УСТАНОВКА.md</code> удалён; (4) эталон-архив пересобран (<code>scripts/rebuild-kit.ps1</code>). Всё закоммичено <strong>ЛОКАЛЬНО</strong> (последний <code>99bf38a</code>), <em>НЕ запушено</em>. Детали — в «Истории решений».</li>
-      <li><strong>Что первым:</strong>
-        <ol style="margin-top:4px;">
-          <li><strong>Сразу напомни Заказчику активировать «Bypass permissions»</strong> в этой сессии (селектор у строки ввода, <code>Ctrl+Shift+M</code> → <code>5</code>) — иначе промпты на каждую команду. <em>Это UI-действие Заказчика, Claude режим не переключает. settings.json <code>defaultMode</code> десктоп ИГНОРИРУЕТ — режим живёт только в селекторе сессии (проверено 2026-06-15, сессия открылась в Accept edits вопреки файлу).</em></li>
-          <li>Стартовый чек-лист CLAUDE.md (прочитать ЖУРНАЛ + ПРОЕКТ + TODO).</li>
-          <li>Самотест хуков: <code>rm -rf /несуществующая-папка-тест</code> → ждём «ЗАБЛОКИРОВАНО ХУКОМ». Если выполнилось — хуки не подцепились, чини до работы.</li>
-          <li>Затем по TODO выбрать с Заказчиком трек: <strong>раскатка обновлённого кита</strong> на др. проекты ИЛИ <strong>тема для functional_v2</strong> (ориентир: эстетика/ритуал/идентичность, где у v1 потолок; Кофейня = эталон, не повторять).</li>
-        </ol>
-      </li>
-      <li><strong>Грабли / нюансы:</strong>
-        <ul style="margin-top:4px;">
-          <li>Заглавные <code>ПРОЕКТ.md / ЖУРНАЛ.html / TODO.md / CLAUDE.md</code> — обязательны (visual-check exempt list ждёт именно так).</li>
-          <li><strong>Compound-команды (<code>&&</code> / <code>;</code>) теперь РАЗРЕШЕНЫ</strong> под Bypass (блок убран из guard-bash 16.06). Опасное (rm -rf, force push) по-прежнему блокируется. Дробить команды НЕ нужно.</li>
-          <li>Коммит-сообщения с подстроками типа <code>rm -rf</code> или <code>force</code> в тексте → блок guard-bash regex. Пиши коммит-message через файл: Write <code>.git-commit-msg.tmp</code>, потом <code>git commit -F .git-commit-msg.tmp</code>, потом <code>rm .git-commit-msg.tmp</code>.</li>
-          <li>PowerShell 5.1 портит UTF-8 в cmdline с кириллицей. Использовать <code>pwsh</code> (PS 7) + скрипт из файла, а не inline <code>-Command "..."</code>.</li>
-          <li><strong>ОБНОВЛЁННЫЙ kit (правки 15–16.06) ещё НЕ раскатан</strong> на Nokki / Scandiwall / OpenClaw — там старая версия (compound ещё блокируется, нет моб-нуджа/провижининга). Раскатка — задача в TODO «Дальше». Эталон = <code>claude-kit-starter.zip</code> + этот проект.</li>
-          <li><strong>Промпты разрешений (история «вечной борьбы», РЕШЕНО 2026-06-15):</strong> на Desktop режим задаётся НЕ файлом, а селектором у строки ввода (<code>Ctrl+Shift+M</code>). Тумблер Settings→Claude Code→«Allow bypass permissions mode» только РАЗБЛОКИРУЕТ опцию, не активирует. Решение — выбрать «Bypass permissions (5)» в селекторе. Возможно, нужно каждую сессию (запоминает ли выбор — не подтверждено). Под Bypass защита держится на хук-гардах.</li>
-          <li><strong>Мобильные скрины — Playwright MCP РАБОТАЕТ.</strong> Подключён в <code>~/.claude.json</code> (user-scope, все проекты ноута). Использование: ToolSearch «playwright» → <code>browser_resize</code> 390 → <code>browser_navigate</code> → <code>browser_take_screenshot</code> → Read PNG. Прод за Cloudflare — дай секунду на челлендж. Chrome MCP resize для мобильного НЕ работает. На финише этапа <code>visual-check</code> напомнит про моб-вид (отвечай «моб не нужен», если не надо). Полный runbook провижининга — в «ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md».</li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+  <!-- ПЕРЕДАЧА вынесена в отдельный файл ПЕРЕДАЧА.md (читается первым на старте) -->
 
   <!-- ТЕКУЩЕЕ СОСТОЯНИЕ -->
   <div class="section">
@@ -225,6 +196,14 @@
     <div class="section-header">
       <div class="section-icon" style="background:#f5f3ff;">🧠</div>
       <h2>История решений</h2>
+    </div>
+
+    <div class="decision">
+      <div class="decision-date">2026-06-19 · ПЕРЕДАЧА вынесена в отдельный файл</div>
+      <div class="decision-title">🚦 ПЕРЕДАЧА → отдельный <code>ПЕРЕДАЧА.md</code> (читается первым) — улучшение из Lexion-сессии</div>
+      <div class="decision-why">
+        <strong>WHY:</strong> ПЕРЕДАЧА была блоком внутри ЖУРНАЛ.html — закопана, неудобно искать. В Lexion-сессии Заказчик вынес её в отдельный файл — удобнее (своя строка в Obsidian-сайдбаре, читается первой; чёткое разделение: ПЕРЕДАЧА = снимок · ЖУРНАЛ = хроника · TODO = очередь). Забрал улучшение в мастер-кит: создан <code>ПЕРЕДАЧА.md</code> (структура «что сделано / что критично на старте / что первым»), блок вырезан из ЖУРНАЛ.html. Поправлено: старт-чеклист (ПЕРЕДАЧА читается ПЕРВОЙ, шаг 1), Правило 16, секция «Файлы», мнемоника, <code>/journal</code> (пишет ПЕРЕДАЧА.md), <code>journal-check</code> housekeepingRe (+передача), kit-шаблон (впечатан чистый ПЕРЕДАЧА.md). Тест journal-check 5/5.
+      </div>
     </div>
 
     <div class="decision">

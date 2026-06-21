@@ -25,7 +25,7 @@ process.stdin.on("end", () => {
 
   const journalRe = /журнал|journal/i;
   const todoRe = /todo\.md$/i;
-  const housekeepingRe = /журнал|journal|todo\.md$|claude\.md$|\.claude[\\\/]/i;
+  const housekeepingRe = /журнал|journal|передача|todo\.md$|claude\.md$|\.claude[\\\/]/i;
 
   const lines = fs.readFileSync(transcript, "utf8").split("\n");
   let lastUserIdx = -1;

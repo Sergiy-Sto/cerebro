@@ -228,6 +228,14 @@
     </div>
 
     <div class="decision">
+      <div class="decision-date">2026-06-19 · Версионирование кита (штамп + changelog)</div>
+      <div class="decision-title">🏷️ Версия кита в шапке CLAUDE.md + «kit @ дата» в старт-отчёте + changelog в арх-доке</div>
+      <div class="decision-why">
+        <strong>WHY:</strong> мульти-проект (Цербро + Nokki/Scandiwall/OpenClaw) — Заказчик забывал, где какая версия кита внедрена. Решение: штамп «Версия кита: ДАТА» в шапке <code>CLAUDE.md</code> (едет с китом → applied-версия проекта), Claude говорит «kit @ ДАТА» в старт-отчёте (видно сразу при старте), секция «История версий кита» в арх-доке (что в какой версии). Заходишь в проект → версия в отчёте → сравнил с changelog → знаешь дельту, и сам тот Claude понимает, что внедрено. Удалённый <code>kit-update-note</code> был инструкцией «как ставить», а не трекером — версия+changelog решает именно отслеживание. Заодно почищен устаревший список скриптов в арх-доке (8 тестов + rebuild-kit.ps1, без несуществующих .py).
+      </div>
+    </div>
+
+    <div class="decision">
       <div class="decision-date">2026-06-19 · Правило 16 ужато</div>
       <div class="decision-title">✂️ Убрана «одна задача = одна сессия» → передача по запросу, сам сессию не предлагать</div>
       <div class="decision-why">

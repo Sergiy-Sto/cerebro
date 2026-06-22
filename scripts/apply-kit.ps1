@@ -1,16 +1,17 @@
-# apply-kit.ps1 — детерминированная РАСКАТКА обновления кита в проект + сверка полноты.
+﻿# apply-kit.ps1 — детерминированная РАСКАТКА обновления кита в проект + сверка полноты.
 # Копирует generic-файлы из свежего архива в проект (по факту различий), НЕ трогает project-specific,
 # и СВЕРЯЕТ до/после (хеши): «0 расхождений» = синк полный и верифицирован. Убирает ручное копирование.
 #
-# Запуск из корня проекта:
-#   pwsh -NoProfile -File scripts/apply-kit.ps1                 # архив берётся из корня проекта
-#   pwsh -NoProfile -File scripts/apply-kit.ps1 -Zip <путь>     # явный путь к claude-kit-starter.zip
-#   ... -Project <корень>   (по умолч. текущая папка)
-#   ... -DryRun             (только показать, что разойдётся — без копирования)
+# Запуск (работает и в pwsh 7, и в powershell.exe 5.1 — файл в UTF-8 с BOM):
+#   pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/apply-kit.ps1 -Zip <архив> -Project <корень>
+#   (нет pwsh → замени `pwsh` на `powershell`; -ExecutionPolicy Bypass обязателен для 5.1)
+#   -Zip по умолч. ищется в корне проекта; -DryRun — показать без копирования; -Details — полные списки.
+# Вывод по умолчанию КОРОТКИЙ: сводка + заметный вердикт-баннер последней строкой («✅ РАСХОЖДЕНИЙ НЕТ»).
 param(
   [string]$Zip = '',
   [string]$Project = (Get-Location).Path,
-  [switch]$DryRun
+  [switch]$DryRun,
+  [switch]$Details   # подробности (списки файлов, пути); по умолчанию — только заметный вердикт
 )
 $ErrorActionPreference = 'Stop'
 
@@ -67,21 +68,32 @@ try {
   }
   $newStamp = Stamp $cl
 
-  Write-Output "=== APPLY-KIT ==="
-  Write-Output ("Архив:  {0}" -f $Zip)
-  Write-Output ("Проект: {0}" -f $Project)
-  if ($DryRun) {
-    Write-Output ("[DryRun] Обновятся ({0}): {1}" -f @($diffBefore).Count, $(if(@($diffBefore).Count){@($diffBefore) -join ', '}else{'ничего, всё актуально'}))
-    Write-Output ("Пропущено project-specific: {0}" -f @($skipped).Count)
-  } else {
-    Write-Output ("Применено файлов: {0}" -f @($applied).Count)
-    foreach ($a in $applied) { Write-Output ("  + " + $a) }
+  $applN = @($applied).Count; $skipN = @($skipped).Count; $diffN = @($diffAfter).Count
+  $bar = ('=' * 52)
+
+  if ($Details) {                              # подробности — ТОЛЬКО по запросу (-Details)
+    Write-Output "--- apply-kit детали ---"
+    Write-Output ("Архив:  {0}" -f $Zip)
+    Write-Output ("Проект: {0}" -f $Project)
     Write-Output ("Штамп кита: {0} -> {1}" -f $oldStamp, $newStamp)
-    Write-Output ("Пропущено project-specific: {0} ({1})" -f @($skipped).Count, (@($skipped) -join ', '))
-    if (@($diffAfter).Count -eq 0) {
-      Write-Output "СВЕРКА: ✅ 0 расхождений — синк полный и верифицирован."
+    foreach ($a in $applied) { Write-Output ("  + применено: " + $a) }
+    foreach ($s in $skipped) { Write-Output ("  · project-specific (не тронут): " + $s) }
+  }
+
+  if ($DryRun) {
+    Write-Output ("[DryRun] обновятся: {0}" -f $(if(@($diffBefore).Count){@($diffBefore) -join ', '}else{'ничего, всё актуально'}))
+  }
+  else {
+    # компактная сводка + ЗАМЕТНЫЙ вердикт ПОСЛЕДНЕЙ строкой
+    Write-Output ("apply-kit (kit @ {0}): применено {1}, project-specific не тронуто {2}" -f $newStamp, $applN, $skipN)
+    Write-Output $bar
+    if ($diffN -eq 0) {
+      Write-Output "  ✅  РАСХОЖДЕНИЙ НЕТ — СИНК ПОЛНЫЙ И ВЕРИФИЦИРОВАН"
+      Write-Output $bar
     } else {
-      Write-Output ("СВЕРКА: ⚠️⚠️⚠️ ОСТАЛИСЬ РАСХОЖДЕНИЯ ({0}): {1}" -f @($diffAfter).Count, (@($diffAfter) -join ', '))
+      Write-Output ("  ⚠️  РАСХОЖДЕНИЯ ({0}) — СИНК НЕПОЛНЫЙ:" -f $diffN)
+      foreach ($d in $diffAfter) { Write-Output ("        - " + $d) }
+      Write-Output $bar
       exit 1
     }
   }

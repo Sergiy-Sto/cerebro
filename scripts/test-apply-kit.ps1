@@ -1,4 +1,4 @@
-# Тест apply-kit.ps1 — хермет: синтетический архив + фейк-проект, без зависимости от реального кита.
+﻿# Тест apply-kit.ps1 — хермет: синтетический архив + фейк-проект, без зависимости от реального кита.
 # Проверяет: generic-файлы обновлены, project-specific (TODO/ПЕРЕДАЧА/ПРОЕКТ/ЖУРНАЛ/guard-files) сохранены,
 # не-архивные файлы не тронуты, итог «0 расхождений».
 # Запуск: pwsh -NoProfile -File scripts/test-apply-kit.ps1
@@ -42,11 +42,11 @@ try {
   Check "project ПРОЕКТ.md СОХРАНён"                 ((Get- 'ПРОЕКТ.md') -eq 'MY real проект')
   Check "project guard-files.js СОХРАНён"            ((Get- '.claude\hooks\guard-files.js') -eq 'MY paths')
   Check "не-архивный ЖУРНАЛ.html не тронут"          ((Get- 'ЖУРНАЛ.html') -eq 'MY journal')
-  Check "вывод: 0 расхождений"                       ($out -match '0 расхождений')
+  Check "вердикт: РАСХОЖДЕНИЙ НЕТ"                    ($out -match 'РАСХОЖДЕНИЙ НЕТ')
 
   # 4) повторный прогон идемпотентен — применять нечего
   $out2 = & pwsh -NoProfile -File $apply -Zip $zip -Project $proj 2>&1 | Out-String
-  Check "идемпотентность: повторно применено 0"      ($out2 -match 'Применено файлов: 0')
+  Check "идемпотентность: повторно применено 0"      ($out2 -match 'применено 0')
 }
 finally {
   if (Test-Path $work) { Remove-Item -Recurse -Force $work }

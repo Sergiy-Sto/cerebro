@@ -177,10 +177,33 @@ process.stdin.on("end", () => {
       "🔔 STOP-ХУК (визуал-проверка): ты завершаешь этап с утверждением о вёрстке/странице/виде " +
       "(«создал страницу», «вёрстка», «выглядит ок» и т.п.), но скрина в этом ходу НЕТ. " +
       "DOM/page_text НЕ считается за визуальную проверку (Правила 2 и 4: «проверил» ≠ «думаю»). " +
-      "Сними скрин затронутого экрана (Chrome MCP; падает → Playwright) и сравни — " +
+      "Сними скрин затронутого экрана (Chrome MCP; падает → Playwright), смотри ДИЗАЙН (воздух/баланс/отбивки), не функционально — " +
       "ИЛИ напиши ЯВНО «смотрел через DOM, скрин не делал», не выдавая DOM за визуальную проверку."
     );
     process.exit(2);
+  }
+
+  // 4) Дизайн-нудж: создал НОВУЮ страницу + скрин снят, но дизайн НЕ оценён (нет design-critique
+  //    и дизайн-лексики) → напомнить осознанно оценить (воздух/баланс/отбивки), не функционально.
+  if (completionSignal && browserActivity && lastScreenshot >= 0) {
+    const newPageRe = /(создал|сделал|сверстал|собрал)\w*\s*(нов\w*\s+)?(страниц|лендинг)|новая\s+страниц/i;
+    const designDoneRe = /design-critique|дизайн-оцен|воздух|баланс|композици|иерархи|отбивк/i;
+    if (newPageRe.test(turnText) && !designDoneRe.test(turnText)) {
+      const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+      const statePath = root + "/.claude/visual-check-design-state.json";
+      let st = { lastUserIdx: -1 };
+      try { st = JSON.parse(fs.readFileSync(statePath, "utf8")); } catch (e) {}
+      if (st.lastUserIdx !== lastUserIdx) {
+        try { fs.writeFileSync(statePath, JSON.stringify({ lastUserIdx })); } catch (e) {}
+        process.stderr.write(
+          "🔔 STOP-ХУК (дизайн-оценка, НЕ запрет): создал новую страницу и снял скрин — но ОЦЕНИЛ ли ты ДИЗАЙН? " +
+          "Скрин в глазах ≠ дизайн-взгляд. Не «всё на месте?», а «хорошо ли выглядит»: воздух, баланс, отбивка от footer/соседей, иерархия. " +
+          "Прогони скилл design:design-critique (если установлен) ИЛИ явно оцени дизайн в ответе. " +
+          "Не оправдывай плохой отступ числом («27px норм») — спроси «душно или нет», а не «сколько px»."
+        );
+        process.exit(2);
+      }
+    }
   }
   process.exit(0);
 });

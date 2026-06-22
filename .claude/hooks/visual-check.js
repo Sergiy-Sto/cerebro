@@ -47,7 +47,7 @@ process.stdin.on("end", () => {
   const gitCommitRe = /git\s+(-C\s+\S+\s+)?commit/i;
   const playwrightShotRe = /playwright__browser_take_screenshot/i;
   // Утверждение визуальной работы (создал страницу / вёрстка / визуальный вывод)
-  const visualClaimRe = /(создал|сделал|сверстал|собрал|оформил|свёрстан|добавил)\w*\s*(страниц|секци|блок|лендинг|форм|вёрстк)|вёрстк\w|свёрстан|отступ\w|выровн\w|выглядит\s+(ок|хорошо|норм|аккуратно|правильно|чисто)|пустое\s+место|на\s+экране/i;
+  const visualClaimRe = /(создал|сделал|сверстал|собрал|оформил|свёрстан|добавил|поправил|подвинул)\w*\s*(страниц|секци|блок|меню|хедер|футер|шапк|подвал|карточк|кнопк|попап|модал|лендинг|форм|вёрстк)|вёрстк\w|свёрстан|отступ\w|выровн\w|выглядит\s+(ок|хорошо|норм|аккуратно|правильно|чисто)|пустое\s+место|на\s+экране/i;
 
   const allLines = fs.readFileSync(path, "utf8").split("\n");
 
@@ -89,6 +89,7 @@ process.stdin.on("end", () => {
   let completionSignal = false;
   let mobileShot = false;
   let turnText = "";
+  let browserActivity = false;
   let i = 0;
 
   for (const line of allLines) {
@@ -108,6 +109,7 @@ process.stdin.on("end", () => {
       if (block.type !== "tool_use") continue;
       const name = String(block.name || "");
       const inp = block.input || {};
+      if (/Claude_in_Chrome|playwright/i.test(name)) browserActivity = true; // ходил в браузер
 
       if (/^Bash$/.test(name) && gitCommitRe.test(String(inp.command || ""))) completionSignal = true;
       if (/playwright/i.test(name)) {
@@ -170,7 +172,7 @@ process.stdin.on("end", () => {
   // 3) Визуал-claim нудж: завершение + утверждение визуальной работы (создал страницу/вёрстка/
   //    «выглядит ок») + НЕТ скрина в ходу → напомнить. Ловит дыру, когда мутация не задетектена
   //    (страница создана через Bash/WP-CLI/клики), но визуальный результат заявлен.
-  if (completionSignal && lastScreenshot < 0 && visualClaimRe.test(turnText)) {
+  if (completionSignal && lastScreenshot < 0 && browserActivity && visualClaimRe.test(turnText)) {
     process.stderr.write(
       "🔔 STOP-ХУК (визуал-проверка): ты завершаешь этап с утверждением о вёрстке/странице/виде " +
       "(«создал страницу», «вёрстка», «выглядит ок» и т.п.), но скрина в этом ходу НЕТ. " +

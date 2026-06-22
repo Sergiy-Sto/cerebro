@@ -18,6 +18,7 @@ ss_id()   { printf '{"message":{"content":[{"type":"tool_use","id":"%s","name":"
 res_err() { printf '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"%s","is_error":true,"content":"Error capturing screenshot: CDP timed out"}]}}' "$1"; }
 res_ok()  { printf '{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"%s","content":"Successfully captured screenshot"}]}}' "$1"; }
 claim()   { printf '{"message":{"content":[{"type":"text","text":"%s"}]}}' "$1"; }
+browse()  { printf '{"message":{"content":[{"type":"tool_use","name":"mcp__Claude_in_Chrome__get_page_text","input":{}}]}}'; }
 run() { rm -f .claude/visual-check-mobile-state.json; printf '{"transcript_path":"%s","stop_hook_active":false}' "$TMP" | node "$HOOK" >/dev/null 2>&1; echo $?; }
 
 # $1 = описание, $2 = ожидаемый код (0=не флаг, 2=флаг), $3 = блоки ПОСЛЕ user-сообщения
@@ -70,13 +71,15 @@ massert "css + упавший скрин (timeout) → флаг" 2
 { user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_id 's2'; printf '\n'; res_ok 's2'; } > "$TMP"
 massert "css + успешный скрин (с id) → не флаг" 0
 
-echo "== visual-check: визуал-claim нудж =="
-{ user_block; printf '\n'; claim 'Создал страницу Аксессуары, готово.'; } > "$TMP"
-massert "создал страницу + готово, без скрина → нудж" 2
-{ user_block; printf '\n'; claim 'Создал страницу Аксессуары, готово.'; printf '\n'; ss_block; } > "$TMP"
+echo "== visual-check: визуал-claim нудж (гейт: браузер-активность) =="
+{ user_block; printf '\n'; browse; printf '\n'; claim 'Создал страницу Аксессуары, готово.'; } > "$TMP"
+massert "создал страницу + DOM-чек, без скрина → нудж" 2
+{ user_block; printf '\n'; browse; printf '\n'; claim 'Создал страницу, готово.'; printf '\n'; ss_block; } > "$TMP"
 massert "создал страницу + скрин снят → не нудж" 0
-{ user_block; printf '\n'; claim 'Готово, обновил TODO.'; } > "$TMP"
+{ user_block; printf '\n'; browse; printf '\n'; claim 'Готово, обновил TODO.'; } > "$TMP"
 massert "готово без визуала → не нудж" 0
+{ user_block; printf '\n'; claim 'Создал страницу, вёрстка готова.'; } > "$TMP"
+massert "визуал-claim БЕЗ браузера → не нудж (анти-ложное)" 0
 
 rm -f "$TMP" .claude/visual-check-mobile-state.json
 echo "Итог: PASS=$pass FAIL=$fail"

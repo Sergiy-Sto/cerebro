@@ -3,6 +3,7 @@
     "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(bash scripts/test-visual-check.sh)",
+      "Bash(bash scripts/test-lens-claim-check.sh)",
       "Bash(bash scripts/test-capitulation.sh)",
       "Bash(bash scripts/test-subagent.sh)",
       "Bash(bash scripts/test-think-deeper.sh)",
@@ -73,6 +74,10 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/visual-check.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/lens-claim-check.js\""
           },
           {
             "type": "command",

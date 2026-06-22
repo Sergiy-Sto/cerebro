@@ -34,6 +34,8 @@ Sync-Dir '.claude\hooks' '*.js' @('guard-files.js')
 Sync-Dir '.claude\commands' '*.md' @()
 Sync-One '.claude\settings.json'
 Sync-Dir 'scripts' '*.sh' @()
+Sync-One 'scripts\apply-kit.ps1'       # раскатка со сверкой — едет в проекты (rebuild-kit.ps1 — нет, он build-only)
+Sync-One 'scripts\test-apply-kit.ps1'
 
 # template-доки и guard-files оставляем как в ките; УСТАНОВКА.md удалён ранее
 $ust = Join-Path $kit 'УСТАНОВКА.md'

@@ -105,4 +105,7 @@ _(см. `TODO.md` → 🟢 В РАБОТЕ)_
 Set-Content -Path (Join-Path $kit 'ПЕРЕДАЧА.md') -Value $peredachaTpl -Encoding utf8
 
 Compress-Archive -Path $kit -DestinationPath $zip -Force
+
+# чистим за собой — иначе _kit-rebuild висит после каждого билда (намусоривание)
+Remove-Item -Recurse -Force $work
 Write-Output "REBUILD OK"

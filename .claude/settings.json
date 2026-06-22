@@ -56,6 +56,15 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-subagent.js\""
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-askquestion.js\""
+          }
+        ]
       }
     ],
     "Stop": [

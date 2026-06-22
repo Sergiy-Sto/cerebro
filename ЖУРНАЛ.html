@@ -198,6 +198,14 @@
       <h2>История решений</h2>
     </div>
 
+    <div class="decision important">
+      <div class="decision-date">2026-06-19 · Хук guard-askquestion (запрет AskUserQuestion)</div>
+      <div class="decision-title">🚫 Запрещён модальный AskUserQuestion — он блокировал текстовые ответы Заказчика</div>
+      <div class="decision-why">
+        <strong>WHY (из ScandiWall-сессии):</strong> AskUserQuestion модальный — блокирует отправку текстовых сообщений Заказчика (висят под опросником, Claude не видит, пока не закрыт). Заказчик ответил текстом и ушёл, думая что решено — а Claude выкинул новый опросник поверх и не увидел ответы → работа зависла, при возвращении висит опросник. Плюс урезанные формулировки и провокация переспрашивать согласованное (нарушение Правил 7/8). Решение: PreToolUse-хук <code>guard-askquestion.js</code> (matcher AskUserQuestion) → блок (exit 2) с инструкцией «спрашивай текстом с ❓; не критично → дефолт». Жёстко на уровне харнесса, обойти нельзя (правило бы выцвело). Тест 2/2. Заодно feedback-память <code>no-clarifying-questions</code>.
+      </div>
+    </div>
+
     <div class="decision">
       <div class="decision-date">2026-06-19 · ПЕРЕДАЧА вынесена в отдельный файл</div>
       <div class="decision-title">🚦 ПЕРЕДАЧА → отдельный <code>ПЕРЕДАЧА.md</code> (читается первым) — улучшение из Lexion-сессии</div>

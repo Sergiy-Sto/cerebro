@@ -27,6 +27,7 @@ function Sync-Dir($relDir, $filter, $excludeNames) {
 # Корневые доки правил/архитектуры (НЕ template-доки)
 Sync-One 'CLAUDE.md'
 Sync-One 'ХУКИ И СКРИПТЫ - АРХИТЕКТУРА.md'
+Sync-One 'ЛИНЗЫ ПРОВЕРКИ.md'
 # Хуки — все, кроме project-специфичного guard-files.js
 Sync-Dir '.claude\hooks' '*.js' @('guard-files.js')
 # Команды, настройки, самотесты

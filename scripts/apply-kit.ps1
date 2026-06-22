@@ -6,11 +6,13 @@
 #   pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/apply-kit.ps1 -Zip <архив> -Project <корень>
 #   (нет pwsh → замени `pwsh` на `powershell`; -ExecutionPolicy Bypass обязателен для 5.1)
 #   -Zip по умолч. ищется в корне проекта; -DryRun — показать без копирования; -Details — полные списки.
+#   -Info — живая ОПИСЬ кита (сколько хуков/скриптов/доков + имена) и выход, без синка.
 # Вывод по умолчанию КОРОТКИЙ: сводка + заметный вердикт-баннер последней строкой («✅ РАСХОЖДЕНИЙ НЕТ»).
 param(
   [string]$Zip = '',
   [string]$Project = (Get-Location).Path,
   [switch]$DryRun,
+  [switch]$Info,     # опись кита (что внутри + счётчики) и выход, без синка
   [switch]$Details   # подробности (списки файлов, пути); по умолчанию — только заметный вердикт
 )
 $ErrorActionPreference = 'Stop'
@@ -27,7 +29,7 @@ function Norm($p) { return ($p -replace '/','\').TrimStart('\') }
 function FHash($p) { if (Test-Path -LiteralPath $p) { (Get-FileHash -Algorithm SHA256 -LiteralPath $p).Hash } else { '' } }
 function IsExcluded($rel) { foreach ($e in $EXCLUDE) { if ((Norm $e) -ieq (Norm $rel)) { return $true } } return $false }
 function Stamp($claudeMd) {
-  if (Test-Path -LiteralPath $claudeMd) { $m = Select-String -LiteralPath $claudeMd -Pattern 'Версия кита:\s*(\S+)'; if ($m) { return $m.Matches[0].Groups[1].Value } }
+  if (Test-Path -LiteralPath $claudeMd) { $m = Select-String -LiteralPath $claudeMd -Pattern 'Версия кита:\s*([^\s*]+)'; if ($m) { return $m.Matches[0].Groups[1].Value } }
   return '?'
 }
 
@@ -42,6 +44,27 @@ try {
   $cl = Join-Path $Project 'CLAUDE.md'
   $oldStamp = Stamp $cl
   $files = Get-ChildItem -Path $src -Recurse -File
+
+  if ($Info) {                                 # живая опись из архива — генерируется, не дрейфует
+    $hooks=@(); $cmds=@(); $scr=@(); $rules=@(); $tpls=@(); $other=@()
+    foreach ($f in $files) {
+      $rel = $f.FullName.Substring($src.Length).TrimStart('\','/'); $n = Norm $rel
+      if     ($n -match '^\.claude\\hooks\\.+\.js$')    { $hooks += $f.BaseName }
+      elseif ($n -match '^\.claude\\commands\\.+\.md$') { $cmds  += $f.BaseName }
+      elseif ($n -match '^scripts\\')                   { $scr   += $f.Name }
+      elseif ($n -notmatch '\\') { if (IsExcluded $rel) { $tpls += $f.Name } else { $rules += $f.Name } }
+      else { $other += $rel }
+    }
+    Write-Output ("=== СОСТАВ КИТА (kit @ {0}) ===" -f (Stamp (Join-Path $src 'CLAUDE.md')))
+    Write-Output ("🪝 Хуки ({0}): {1}"    -f @($hooks).Count, (@($hooks) -join ', '))
+    Write-Output ("⚙  Команды ({0}): {1}" -f @($cmds).Count,  (@($cmds)  -join ', '))
+    Write-Output ("📜 Скрипты ({0}): {1}" -f @($scr).Count,   (@($scr)   -join ', '))
+    Write-Output ("📄 Правила ({0}): {1}" -f @($rules).Count, (@($rules) -join ', '))
+    Write-Output ("📄 Шаблоны ({0}): {1}" -f @($tpls).Count,  (@($tpls)  -join ', '))
+    if (@($other).Count) { Write-Output ("·  Прочее ({0}): {1}" -f @($other).Count, (@($other) -join ', ')) }
+    Write-Output ("Всего файлов: {0}" -f @($files).Count)
+    return                                     # выходим; finally почистит tmp
+  }
 
   $applied = @(); $skipped = @(); $diffBefore = @()
   foreach ($f in $files) {

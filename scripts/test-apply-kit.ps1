@@ -47,6 +47,11 @@ try {
   # 4) повторный прогон идемпотентен — применять нечего
   $out2 = & pwsh -NoProfile -File $apply -Zip $zip -Project $proj 2>&1 | Out-String
   Check "идемпотентность: повторно применено 0"      ($out2 -match 'применено 0')
+
+  # 5) -Info печатает живую опись (в синтет. ките 2 хука: sample, guard-files)
+  $info = & pwsh -NoProfile -File $apply -Zip $zip -Project $proj -Info 2>&1 | Out-String
+  Check "-Info: счётчик хуков (2)"                    ($info -match 'Хуки \(2\)')
+  Check "-Info: строка Всего файлов"                 ($info -match 'Всего файлов')
 }
 finally {
   if (Test-Path $work) { Remove-Item -Recurse -Force $work }

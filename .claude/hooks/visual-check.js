@@ -7,10 +7,11 @@
 // ЧЕЙ РЕЗУЛЬТАТ НЕ ОШИБКА (упавший/timeout-скрин НЕ засчитывается — проход 0).
 // DOM-чтение (page_text, computed style) НЕ считается — оно и усыпляет бдительность.
 // Один пинок за ход (stop_hook_active).
-// + Mobile-нудж: на ЗАВЕРШЕНИИ этапа (готово/commit/TODO[x]) с правкой вёрстки, если
-//   моб-скрин (Playwright resize<=500) не снят → напоминание 1 раз на завершение (НЕ запрет).
-// Адаптация: Claude (сессия ScandiWall) по полевому опыту; фикс browser_batch + проверка
-// упавшего скрина (Elementor Brown swatch: Chrome MCP timeout засчитывался как скрин): Claude.
+// + Mobile-нудж: на ЗАВЕРШЕНИИ этапа с правкой вёрстки, если моб-скрин не снят → напоминание.
+// + Визуал-claim нудж: на завершении Claude УТВЕРЖДАЕТ визуальную работу (создал страницу,
+//   вёрстка, отступ, "выглядит ок"), но скрина в ходу НЕТ → напоминание (ловит дыру, когда
+//   страница создана через Bash/WP-CLI/клики — мутация не задетектена, но визуал заявлен).
+// Адаптация: Claude (сессия ScandiWall) по полевому опыту.
 
 const fs = require("fs");
 
@@ -39,20 +40,18 @@ process.stdin.on("end", () => {
   const fileVisualRe = /\.(css|scss|sass|less)$/i;
   const fileMarkupRe = /\.(jsx?|tsx?|vue|html|php)$/i;
   const styleMarkerRe = /className|class=|style=|tailwind|font-|color|margin|padding|flex|grid|elementor|mega-menu/i;
-  // Локальные доки проекта (журнал/проект/очередь/правила) и файлы тулинга в
-  // .claude/ — НЕ вёрстка сайта. ЖУРНАЛ.html содержит CSS, а сами хуки (.js)
-  // содержат слова color/margin/... в регэкспах → оба ловятся styleMarkerRe.
   const docExemptRe = /(^|[\\/])(ЖУРНАЛ\.html|ПРОЕКТ\.md|TODO\.md|CLAUDE\.md)$|(^|[\\/])\.claude[\\/]/i;
 
-  // --- Mobile-нудж на финише (напоминалка, НЕ запрет; 1 раз на завершение этапа) ---
-  const completionTextRe = /\bготов\w*\b|\bсделан\w*\b|задача выполн|этап выполн|✅/i;
+  // --- Нуджи на финише ---
+  const completionTextRe = /готов|сделан|задача выполн|этап выполн|✅/i;
   const gitCommitRe = /git\s+(-C\s+\S+\s+)?commit/i;
   const playwrightShotRe = /playwright__browser_take_screenshot/i;
+  // Утверждение визуальной работы (создал страницу / вёрстка / визуальный вывод)
+  const visualClaimRe = /(создал|сделал|сверстал|собрал|оформил|свёрстан|добавил)\w*\s*(страниц|секци|блок|лендинг|форм|вёрстк)|вёрстк\w|свёрстан|отступ\w|выровн\w|выглядит\s+(ок|хорошо|норм|аккуратно|правильно|чисто)|пустое\s+место|на\s+экране/i;
 
   const allLines = fs.readFileSync(path, "utf8").split("\n");
 
   // --- Проход 0: id вызовов, ЧЕЙ tool_result — ошибка (упавший скрин ≠ скрин) ---
-  // tool_result приходит ПОЗЖЕ своего tool_use, поэтому отдельный предпроход.
   const shotErrRe = /error capturing|timed out|timeout|renderer may be|###\s*error|failed to (capture|take|screenshot)|screenshot[^"]*(fail|error)/i;
   const erroredToolIds = new Set();
   for (const line of allLines) {
@@ -69,10 +68,7 @@ process.stdin.on("end", () => {
   }
   const okShot = (block) => !erroredToolIds.has(block && block.id);
 
-  // ФИКС false-positive: считаем мутации/скрины ТОЛЬКО в текущем ходу
-  // (от последнего реального сообщения Заказчика и далее). Иначе старые
-  // .tsx/.css-Edit'ы из ранних сессий висят как «непрокрытая мутация», и
-  // хук пинает каждый ход, даже когда правок в текущем ходу не было.
+  // считаем мутации/скрины ТОЛЬКО в текущем ходу (от последнего сообщения Заказчика)
   let lastUserIdx = -1;
   for (let k = 0; k < allLines.length; k++) {
     if (!allLines[k].trim()) continue;
@@ -92,6 +88,7 @@ process.stdin.on("end", () => {
   let lastScreenshot = -1;
   let completionSignal = false;
   let mobileShot = false;
+  let turnText = "";
   let i = 0;
 
   for (const line of allLines) {
@@ -103,12 +100,15 @@ process.stdin.on("end", () => {
     const content = entry && entry.message && Array.isArray(entry.message.content) ? entry.message.content : [];
     for (const block of content) {
       if (!block) continue;
-      if (block.type === "text" && completionTextRe.test(String(block.text || ""))) completionSignal = true;
+      if (block.type === "text") {
+        const t = String(block.text || "");
+        turnText += " " + t;
+        if (completionTextRe.test(t)) completionSignal = true;
+      }
       if (block.type !== "tool_use") continue;
       const name = String(block.name || "");
       const inp = block.input || {};
 
-      // Сигналы завершения этапа (для моб-нуджа) + моб-скрин снят?
       if (/^Bash$/.test(name) && gitCommitRe.test(String(inp.command || ""))) completionSignal = true;
       if (/playwright/i.test(name)) {
         if (playwrightShotRe.test(name) && okShot(block)) lastScreenshot = i;
@@ -138,7 +138,7 @@ process.stdin.on("end", () => {
     }
   }
 
-  // 1) Жёсткая проверка: вёрстка тронута, но УСПЕШНОГО скрина после неё нет.
+  // 1) Жёсткая проверка: вёрстка тронута (файл/браузер), но УСПЕШНОГО скрина после неё нет.
   if (lastMutation > -1 && lastScreenshot < lastMutation) {
     process.stderr.write(
       "STOP-ХУК (визуал): была правка вёрстки/живой страницы (Elementor/WPCode/POST), но ПОСЛЕ неё нет " +
@@ -165,6 +165,20 @@ process.stdin.on("end", () => {
       );
       process.exit(2);
     }
+  }
+
+  // 3) Визуал-claim нудж: завершение + утверждение визуальной работы (создал страницу/вёрстка/
+  //    «выглядит ок») + НЕТ скрина в ходу → напомнить. Ловит дыру, когда мутация не задетектена
+  //    (страница создана через Bash/WP-CLI/клики), но визуальный результат заявлен.
+  if (completionSignal && lastScreenshot < 0 && visualClaimRe.test(turnText)) {
+    process.stderr.write(
+      "🔔 STOP-ХУК (визуал-проверка): ты завершаешь этап с утверждением о вёрстке/странице/виде " +
+      "(«создал страницу», «вёрстка», «выглядит ок» и т.п.), но скрина в этом ходу НЕТ. " +
+      "DOM/page_text НЕ считается за визуальную проверку (Правила 2 и 4: «проверил» ≠ «думаю»). " +
+      "Сними скрин затронутого экрана (Chrome MCP; падает → Playwright) и сравни — " +
+      "ИЛИ напиши ЯВНО «смотрел через DOM, скрин не делал», не выдавая DOM за визуальную проверку."
+    );
+    process.exit(2);
   }
   process.exit(0);
 });

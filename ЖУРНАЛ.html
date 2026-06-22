@@ -198,6 +198,14 @@
       <h2>История решений</h2>
     </div>
 
+    <div class="decision">
+      <div class="decision-date">2026-06-19 · visual-claim нудж + фикс кириллицы в visual-check</div>
+      <div class="decision-title">🔔 visual-check ловит «создал страницу/вёрстка» без скрина (дыра с созданием страницы) + фикс `\b` на кириллице</div>
+      <div class="decision-why">
+        <strong>WHY (ScandiWall):</strong> Claude создал целую страницу «Аксессуары» и закрыл задачу БЕЗ скрина — visual-check молчал. Причина: хук ловит «правка файла / Chrome-MCP-мутация → скрин», но НЕ Bash/WP-CLI/клики-координаты — страница создана невидимым для хука путём → нет мутации → нет требования. Детект мутаций в принципе дырявый. Фикс надёжный: ловить УТВЕРЖДЕНИЕ на завершении (<code>visualClaimRe</code>: «создал страницу / вёрстка / отступ / выглядит ок») + нет скрина в ходу → нудж (Правила 2/4: DOM ≠ визуальная проверка). Попутно вскрылся pre-existing баг: <code>\bготов\w*\b</code> НЕ матчил кириллицу (в JS <code>\b</code> — ASCII-граница, кириллица не <code>\w</code>) → completionSignal ловился только по ✅/commit. Убрал <code>\b</code>. Тест visual-check 17/17.
+      </div>
+    </div>
+
     <div class="decision important">
       <div class="decision-date">2026-06-19 · Хук guard-askquestion (запрет AskUserQuestion)</div>
       <div class="decision-title">🚫 Запрещён модальный AskUserQuestion — он блокировал текстовые ответы Заказчика</div>

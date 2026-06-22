@@ -90,6 +90,7 @@ process.stdin.on("end", () => {
   let mobileShot = false;
   let turnText = "";
   let browserActivity = false;
+  let designCriticInvoked = false;
   let i = 0;
 
   for (const line of allLines) {
@@ -110,6 +111,7 @@ process.stdin.on("end", () => {
       const name = String(block.name || "");
       const inp = block.input || {};
       if (/Claude_in_Chrome|playwright/i.test(name)) browserActivity = true; // ходил в браузер
+      if (/^(Skill|Agent|Task)$/i.test(name) && /design-critique/i.test(JSON.stringify(inp))) designCriticInvoked = true; // реально прогнал critique
 
       if (/^Bash$/.test(name) && gitCommitRe.test(String(inp.command || ""))) completionSignal = true;
       if (/playwright/i.test(name)) {
@@ -187,8 +189,9 @@ process.stdin.on("end", () => {
   //    и дизайн-лексики) → напомнить осознанно оценить (воздух/баланс/отбивки), не функционально.
   if (completionSignal && browserActivity && lastScreenshot >= 0) {
     const newPageRe = /(создал|сделал|сверстал|собрал)\w*\s*(нов\w*\s+)?(страниц|лендинг)|новая\s+страниц/i;
-    const designDoneRe = /design-critique|дизайн-оцен|воздух|баланс|композици|иерархи|отбивк/i;
-    if (newPageRe.test(turnText) && !designDoneRe.test(turnText)) {
+    // Суппрессор — АРТЕФАКТ (реальный вызов скилла), а не лексика: слова «воздух ок»
+    // можно написать не оценивая; вызов design-critique структурно не сымитируешь.
+    if (newPageRe.test(turnText) && !designCriticInvoked) {
       const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
       const statePath = root + "/.claude/visual-check-design-state.json";
       let st = { lastUserIdx: -1 };
@@ -196,10 +199,10 @@ process.stdin.on("end", () => {
       if (st.lastUserIdx !== lastUserIdx) {
         try { fs.writeFileSync(statePath, JSON.stringify({ lastUserIdx })); } catch (e) {}
         process.stderr.write(
-          "🔔 STOP-ХУК (дизайн-оценка, НЕ запрет): создал новую страницу и снял скрин — но ОЦЕНИЛ ли ты ДИЗАЙН? " +
-          "Скрин в глазах ≠ дизайн-взгляд. Не «всё на месте?», а «хорошо ли выглядит»: воздух, баланс, отбивка от footer/соседей, иерархия. " +
-          "Прогони скилл design:design-critique (если установлен) ИЛИ явно оцени дизайн в ответе. " +
-          "Не оправдывай плохой отступ числом («27px норм») — спроси «душно или нет», а не «сколько px»."
+          "🔔 STOP-ХУК (дизайн-оценка, НЕ запрет): создал новую страницу + скрин снят, но скилл design:design-critique НЕ запускался. " +
+          "Скрин в глазах ≠ дизайн-взгляд, а слова «выглядит ок» можно написать не оценивая (скилл — нет). " +
+          "Новая страница/крупная вёрстка → прогони `design:design-critique` (структурно проверит воздух/баланс/отбивки/иерархию) " +
+          "ИЛИ явно напиши, почему полный critique не нужен (мелкая правка / оценил осознанно так-то). Не оправдывай отступ числом («27px норм»)."
         );
         process.exit(2);
       }

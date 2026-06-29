@@ -26,6 +26,9 @@ check "не могу + субагент Agent"           0 '[{"type":"text","tex
 check "не могу + WebSearch"                0 '[{"type":"text","text":"не могу"},{"type":"tool_use","name":"WebSearch","input":{}}]'
 check "проверь у себя (капит.)"            2 '[{"type":"text","text":"проверь у себя и скажи"}]'
 check "TaskCreate НЕ считается поиском"     2 '[{"type":"text","text":"не могу"},{"type":"tool_use","name":"TaskCreate","input":{}}]'
+check "«проверишь только ты» (капит.)"      2 '[{"type":"text","text":"моб-залогиненный вид проверишь только ты"}]'
+check "«без твоей сессии» (капит.)"         2 '[{"type":"text","text":"playwright дал бы моб, но без твоей сессии не залогинен"}]'
+check "продуктовый выбор (искл., не флаг)"  0 '[{"type":"text","text":"тебе нужно проверить, какой вариант заголовка лучше"}]'
 
 rm -f "$TMP"
 echo "Итог: PASS=$pass FAIL=$fail"

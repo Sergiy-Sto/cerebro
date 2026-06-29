@@ -36,6 +36,7 @@ check "ПРОЕКТ.md (док)"        0 "$(edit_block 'ПРОЕКТ.md' 'arch 
 check "style.css (вёрстка)"    2 "$(edit_block 'assets/style.css' 'body{color:red}')"
 check "product-page.html"      2 "$(edit_block 'product-page.html' 'div class= margin padding color flex')"
 check ".claude/hooks (тулинг)" 0 "$(edit_block '.claude/hooks/visual-check.js' 'color margin padding flex grid styleMarkerRe')"
+check "мокап (Мокапы/) → не флаг (throwaway)" 0 "$(edit_block 'Мокапы/hero.html' 'div class= margin padding color flex')"
 { user_block; printf '\n'; edit_block 'assets/style.css' 'body{color:red}'; printf '\n'; ss_block; } > "$TMP"
 check_after_compose() {
   local got; got=$(run)

@@ -26,6 +26,8 @@ process.stdin.on("end", () => {
   const journalRe = /журнал|journal/i;
   const todoRe = /todo\.md$/i;
   const housekeepingRe = /журнал|journal|передача|todo\.md$|claude\.md$|\.claude[\\\/]/i;
+  // throwaway/разведка (мокапы, прототипы) — НЕ требуют журнала: WHY фиксируется на РЕШЕНИИ, не на каждом наброске
+  const throwawayRe = /мокап|mockup|прототип|prototype|scratch|sandbox/i;
 
   const lines = fs.readFileSync(transcript, "utf8").split("\n");
   let lastUserIdx = -1;
@@ -59,7 +61,7 @@ process.stdin.on("end", () => {
       const file = String((b.input && (b.input.file_path || b.input.path)) || "");
       if (journalRe.test(file)) journaled = true;
       else if (todoRe.test(file)) todoUpdated = true;
-      else if (!housekeepingRe.test(file)) workDone = true;
+      else if (!housekeepingRe.test(file) && !throwawayRe.test(file)) workDone = true;
     }
   }
 

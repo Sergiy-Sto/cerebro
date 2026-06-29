@@ -27,6 +27,8 @@ check "работа, ничего не записано → флаг"          2
 check "работа + журнал + TODO → НЕ флаг"           0 "[$(tu Write 'scripts/x.sh'),$(tu Edit 'ЖУРНАЛ.html'),$(tu Edit 'TODO.md')]"
 check "только .claude (housekeeping) → НЕ флаг"    0 "[$(tu Edit '.claude/hooks/x.js')]"
 check "работа + TODO без журнала → флаг (Прав.10)" 2 "[$(tu Write 'scripts/x.sh'),$(tu Edit 'TODO.md')]"
+check "правка мокапа (Мокапы/) → НЕ флаг (throwaway)" 0 "[$(tu Write 'Мокапы/hero.html')]"
+check "мокап + прод-код → флаг (прод требует журнал)" 2 "[$(tu Write 'Мокапы/hero.html'),$(tu Write 'src/app.js')]"
 
 rm -f "$TMP" "$STATE"
 echo "Итог: PASS=$pass FAIL=$fail"

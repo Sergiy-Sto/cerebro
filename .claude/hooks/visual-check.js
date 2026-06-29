@@ -41,6 +41,7 @@ process.stdin.on("end", () => {
   const fileMarkupRe = /\.(jsx?|tsx?|vue|html|php)$/i;
   const styleMarkerRe = /className|class=|style=|tailwind|font-|color|margin|padding|flex|grid|elementor|mega-menu/i;
   const docExemptRe = /(^|[\\/])(ЖУРНАЛ\.html|ПРОЕКТ\.md|TODO\.md|CLAUDE\.md)$|(^|[\\/])\.claude[\\/]/i;
+  const throwawayRe = /мокап|mockup|прототип|prototype|scratch|sandbox/i; // мокапы/прототипы — не прод-страница, не нудим
 
   // --- Нуджи на финише ---
   const completionTextRe = /готов|сделан|задача выполн|этап выполн|✅/i;
@@ -136,7 +137,7 @@ process.stdin.on("end", () => {
         const file = String(inp.file_path || inp.path || "");
         const text = String(inp.new_string || inp.content || "");
         if (/TODO\.md$/i.test(file) && /\[x\]/i.test(text)) completionSignal = true; // задача закрыта
-        if (docExemptRe.test(file)) continue; // локальный док проекта — не страница сайта
+        if (docExemptRe.test(file) || throwawayRe.test(file)) continue; // локальный док / throwaway-мокап — не страница сайта
         if (fileVisualRe.test(file) || (fileMarkupRe.test(file) && styleMarkerRe.test(text))) lastMutation = i;
       }
     }
